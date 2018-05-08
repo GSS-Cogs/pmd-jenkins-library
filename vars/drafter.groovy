@@ -18,7 +18,7 @@ def deleteDraftset(String baseUrl, String credentials, String id) {
     if (response.status == 202) {
         def job = readJSON(text: response.content)
         drafter.waitForJob(
-                "${baseUrl}${job['finished-job']}",
+                "${baseUrl}${job['finished-job']}" as String,
                 credentials, job['restart-id'] as String)
     } else {
         error "Problem deleting draftset ${response.status} : ${response.content}"
@@ -62,7 +62,7 @@ def addData(String baseUrl, String credentials, String id, data, String type) {
     if (response.status == 202) {
         def job = readJSON(text: response.content)
         drafter.waitForJob(
-                "${baseUrl}${job['finished-job']}",
+                "${baseUrl}${job['finished-job']}" as String,
                 credentials, job['restart-id'] as String)
     } else {
         error "Problem adding data ${response.status} : ${response.content}"
@@ -77,7 +77,7 @@ def publishDraftset(String baseUrl, String credentials, String id) {
     if (response.status == 202) {
         def job = readJSON(text: response.content)
         drafter.waitForJob(
-                "${baseUrl}${job['finished-job']}",
+                "${baseUrl}${job['finished-job']}" as String,
                 credentials, job['restart-id'] as String)
     } else {
         error "Problem publishing draftset ${response.status} : ${response.content}"

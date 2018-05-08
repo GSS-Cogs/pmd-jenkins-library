@@ -1,4 +1,4 @@
-def call(pipelineUrl, draftsetId, credentials, params) {
+def call(String pipelineUrl, String draftsetId, String credentials, params) {
     withCredentials([usernameColonPassword(credentialsId: credentials, variable: 'USERPASS')]) {
         String boundary = UUID.randomUUID().toString()
         def allParams = [
@@ -25,7 +25,7 @@ def call(pipelineUrl, draftsetId, credentials, params) {
         if (importRequest.status == 202) {
             def importJob = readJSON(text: importRequest.content)
             String jobUrl = new java.net.URI(pipelineUrl).resolve(importJob['finished-job']) as String
-            drafter.waitForJob(jobUrl, credentials, importJob['restart-id'])
+            drafter.waitForJob(jobUrl, credentials, importJob['restart-id'] as String)
         } else {
             error "Failed import, ${importRequest.status} : ${importRequest.content}"
         }
