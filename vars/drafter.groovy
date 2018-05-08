@@ -14,7 +14,7 @@ def deleteDraftset(baseUrl, credentials, id) {
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
             authentication: credentials,
             httpMode: 'DELETE',
-            url: "${baseUrl}/v1/draftset/${jobDraft.id}")
+            url: "${baseUrl}/v1/draftset/${id}")
     if (response.status == 202) {
         def job = readJSON(text: response.content)
         drafter.waitForJob(
@@ -35,6 +35,19 @@ def createDraftset(baseUrl, credentials, label) {
         return readJSON(text: response.content)
     } else {
         error "Problem creating draftset ${response.status} : ${response.content}"
+    }
+}
+
+def deleteGraph(baseUrl, credentials, id, graph) {
+    String encGraph = java.net.URLEncoder.encode(graph, "UTF-8")
+    def response = httpRequest(acceptType: 'APPLICATION_JSON',
+                               authentication: 'onspmd',
+                               httpMode: 'DELETE',
+                               url: "${baseUrl}/v1/draftset/${id}/graph?graph=${encGraph}&silent=true")
+    if (response.status == 200) {
+        return readJSON(text: response.content)
+    } else {
+        error "Problem deleting graph ${response.status} : ${response.content}"
     }
 }
 
