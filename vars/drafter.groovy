@@ -1,4 +1,4 @@
-def listDraftsets(baseUrl, credentials, include) {
+def listDraftsets(String baseUrl, String credentials, String include) {
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
             authentication: credentials,
             httpMode: 'GET',
@@ -10,7 +10,7 @@ def listDraftsets(baseUrl, credentials, include) {
     }
 }
 
-def deleteDraftset(baseUrl, credentials, id) {
+def deleteDraftset(String baseUrl, String credentials, String id) {
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
             authentication: credentials,
             httpMode: 'DELETE',
@@ -19,13 +19,13 @@ def deleteDraftset(baseUrl, credentials, id) {
         def job = readJSON(text: response.content)
         drafter.waitForJob(
                 "${baseUrl}${job['finished-job']}",
-                credentials, job['restart-id'])
+                credentials, job['restart-id'] as String)
     } else {
         error "Problem deleting draftset ${response.status} : ${response.content}"
     }
 }
 
-def createDraftset(baseUrl, credentials, label) {
+def createDraftset(String baseUrl, String credentials, String label) {
     String displayName = java.net.URLEncoder.encode(label, "UTF-8")
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
             authentication: credentials,
@@ -38,10 +38,10 @@ def createDraftset(baseUrl, credentials, label) {
     }
 }
 
-def deleteGraph(baseUrl, credentials, id, graph) {
+def deleteGraph(String baseUrl, String credentials, String id, String graph) {
     String encGraph = java.net.URLEncoder.encode(graph, "UTF-8")
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
-                               authentication: 'onspmd',
+                               authentication: credentials,
                                httpMode: 'DELETE',
                                url: "${baseUrl}/v1/draftset/${id}/graph?graph=${encGraph}&silent=true")
     if (response.status == 200) {
@@ -51,7 +51,7 @@ def deleteGraph(baseUrl, credentials, id, graph) {
     }
 }
 
-def addData(baseUrl, credentials, id, data, type) {
+def addData(String baseUrl, String credentials, String id, data, String type) {
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
             authentication: credentials,
             httpMode: 'PUT',
@@ -63,13 +63,13 @@ def addData(baseUrl, credentials, id, data, type) {
         def job = readJSON(text: response.content)
         drafter.waitForJob(
                 "${baseUrl}${job['finished-job']}",
-                credentials, job['restart-id'])
+                credentials, job['restart-id'] as String)
     } else {
         error "Problem adding data ${response.status} : ${response.content}"
     }
 }
 
-def publishDraftset(baseUrl, credentials, id) {
+def publishDraftset(String baseUrl, String credentials, String id) {
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
             authentication: credentials,
             httpMode: 'POST',
@@ -78,13 +78,13 @@ def publishDraftset(baseUrl, credentials, id) {
         def job = readJSON(text: response.content)
         drafter.waitForJob(
                 "${baseUrl}${job['finished-job']}",
-                credentials, job['restart-id'])
+                credentials, job['restart-id'] as String)
     } else {
         error "Problem publishing draftset ${response.status} : ${response.content}"
     }
 }
 
-def waitForJob(pollUrl, credentials, restartId) {
+def waitForJob(String pollUrl, String credentials, String restartId) {
     while (true) {
         jobResponse = httpRequest(acceptType: 'APPLICATION_JSON', authentication: credentials,
                 httpMode: 'GET', url: pollUrl, validResponseCodes: '200:404')
