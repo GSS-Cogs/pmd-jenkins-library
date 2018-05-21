@@ -81,12 +81,12 @@ def publishDraftset(String baseUrl, String credentials, String id) {
                 credentials, job['restart-id'] as String)
         def cacheClearResponse = httpRequest(acceptType: 'APPLICATION_JSON',
                 httpMode: 'PUT',
-                credentials: '57e63e26-4dea-4679-ab47-840dc199e133',
+                authentication: '57e63e26-4dea-4679-ab47-840dc199e133',
                 url: "http://gss-data.org.uk/_clear_cache")
         echo readJSON(text: cacheClearResponse.content)['message']
         def syncSearchResponse = httpRequest(acceptType: 'APPLICATION_JSON',
                 httpMode: 'PUT',
-                credentials: '57e63e26-4dea-4679-ab47-840dc199e133',
+                authentication: '57e63e26-4dea-4679-ab47-840dc199e133',
                 url: "http://gss-data.org.uk/_sync_search")
         echo readJSON(text: syncSearchResponse.content)['message']
     } else {
