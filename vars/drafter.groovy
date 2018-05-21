@@ -87,7 +87,7 @@ def publishDraftset(String baseUrl, String credentials, String id) {
 def waitForJob(String pollUrl, String credentials, String restartId) {
     while (true) {
         jobResponse = httpRequest(acceptType: 'APPLICATION_JSON', authentication: credentials,
-                httpMode: 'GET', url: pollUrl, validResponseCodes: '200:404')
+                httpMode: 'GET', url: pollUrl, validResponseCodes: '200:599')
         if (jobResponse.status == 404) {
             if (readJSON(text: jobResponse.content)['restart-id'] != restartId) {
                 error "Failed waiting for job to finish, restart-id different."
@@ -103,6 +103,10 @@ def waitForJob(String pollUrl, String credentials, String restartId) {
             } else if (jobResponseObj.type == "error") {
                 error "Pipeline error in ${jobResponseObj.details?.pipeline?.name}. ${jobResponseObj.message}"
             }
+        } else {
+            echo jobResponse.content
+            jobResponseObj = readJSON(text: jobResponse.content)
+            error "Unexpected response waiting for job to complete: ${jobResponseObj.message}"
         }
     }
 }
