@@ -1,4 +1,4 @@
-def call(String datasetLabel) {
+def call() {
     configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
         def config = readJSON(text: readFile(file: configfile))
         String PMD = config['pmd_api']
