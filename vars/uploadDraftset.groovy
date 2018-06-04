@@ -1,4 +1,4 @@
-def call(String datasetLabel, List<String> csvs) {
+def call(String datasetLabel, csvs) {
     configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
         def config = readJSON(text: readFile(file: configfile))
         String PMD = config['pmd_api']
@@ -20,11 +20,11 @@ def call(String datasetLabel, List<String> csvs) {
                 "http://gss-data.org.uk/graph/${datasetPath}")
         drafter.addData(PMD, credentials, newJobDraft.id,
                 readFile("out/dataset.trig"), "application/trig")
-        for (int i = 0; i < csvs.size(), i++ ) {
-            echo "Uploading ${csvs[i]}"
+        csvs.each { csv ->
+            echo "Uploading ${csv}"
             runPipeline("${PIPELINE}/ons-table2qb.core/data-cube/import",
                     newJobDraft.id, credentials, [[name: 'observations-csv',
-                                                   file: [name: csvs[i], type: 'text/csv']],
+                                                   file: [name: csv, type: 'text/csv']],
                                                   [name: 'dataset-name', value: datasetLabel]])
         }
     }
