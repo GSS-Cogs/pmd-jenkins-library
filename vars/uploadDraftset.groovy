@@ -10,7 +10,7 @@ def call(String datasetLabel, csvs) {
             drafter.deleteDraftset(PMD, credentials, jobDraft.id)
         }
         def newJobDraft = drafter.createDraftset(PMD, credentials, env.JOB_NAME)
-        String datasetPath = datasetLabel
+        String datasetPath = datasetLabel.toLowerCase()
                 .replaceAll('[^\\w/]', '-')
                 .replaceAll('-+', '-')
                 .replaceAll('-\$', '')
