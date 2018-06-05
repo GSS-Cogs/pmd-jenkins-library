@@ -1,4 +1,5 @@
 def listDraftsets(String baseUrl, String credentials, String include) {
+    echo "Listing draftsets..."
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
             authentication: credentials,
             httpMode: 'GET',
@@ -11,6 +12,7 @@ def listDraftsets(String baseUrl, String credentials, String include) {
 }
 
 def deleteDraftset(String baseUrl, String credentials, String id) {
+    echo "Deleting draftset ${id}"
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
             authentication: credentials,
             httpMode: 'DELETE',
@@ -26,6 +28,7 @@ def deleteDraftset(String baseUrl, String credentials, String id) {
 }
 
 def createDraftset(String baseUrl, String credentials, String label) {
+    echo "Creating draftset ${label}"
     String displayName = java.net.URLEncoder.encode(label, "UTF-8")
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
             authentication: credentials,
@@ -39,6 +42,7 @@ def createDraftset(String baseUrl, String credentials, String label) {
 }
 
 def deleteGraph(String baseUrl, String credentials, String id, String graph) {
+    echo "Deleting graph <${graph}> from draftset ${id}"
     String encGraph = java.net.URLEncoder.encode(graph, "UTF-8")
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
                                authentication: credentials,
@@ -52,6 +56,7 @@ def deleteGraph(String baseUrl, String credentials, String id, String graph) {
 }
 
 def addData(String baseUrl, String credentials, String id, data, String type) {
+    echo "Adding data to draftset ${id}"
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
             authentication: credentials,
             httpMode: 'PUT',
@@ -70,6 +75,7 @@ def addData(String baseUrl, String credentials, String id, data, String type) {
 }
 
 def publishDraftset(String baseUrl, String credentials, String id) {
+    echo "Publishing draftset ${id}"
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
             authentication: credentials,
             httpMode: 'POST',
