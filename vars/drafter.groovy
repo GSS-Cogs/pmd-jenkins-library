@@ -55,12 +55,17 @@ def deleteGraph(String baseUrl, String credentials, String id, String graph) {
     }
 }
 
-def addData(String baseUrl, String credentials, String id, data, String type) {
+def addData(String baseUrl, String credentials, String id, data, String type, String graph=null) {
     echo "Adding data to draftset ${id}"
+    String url = "${baseUrl}/v1/draftset/${id}/data"
+    if (graph) {
+        String encGraph = java.net.URLEncoder.encode(graph, "UTF-8")
+        url = url + "?graph=${encGraph}"
+    }
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
             authentication: credentials,
             httpMode: 'PUT',
-            url: "${baseUrl}/v1/draftset/${id}/data",
+            url: url,
             requestBody: data,
             customHeaders: [[name: 'Content-Type',
                              value: type]])
