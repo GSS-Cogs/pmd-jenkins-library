@@ -59,12 +59,8 @@ def addData(String baseUrl, String credentials, String id, data, String type, St
     echo "Adding data to draftset ${id}"
     String url = "${baseUrl}/v1/draftset/${id}/data"
     if (graph) {
-        if (type.contains('charset')) { // workaroud odd issue with endpoint not parsing params if charset
-            url = url + "?graph=${graph}"
-        } else {
-            String encGraph = java.net.URLEncoder.encode(graph, "UTF-8")
-            url = url + "?graph=${encGraph}"
-        }
+        String encGraph = java.net.URLEncoder.encode(graph, "UTF-8")
+        url = url + "?graph=${encGraph}"
     }
     def response = httpRequest(acceptType: 'APPLICATION_JSON',
             authentication: credentials,

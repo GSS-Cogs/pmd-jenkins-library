@@ -21,7 +21,8 @@ def call(String pipelineUrl, String draftsetId, String credentials, params) {
         body += "--${boundary}--\r\n"
         def importRequest = httpRequest(acceptType: 'APPLICATION_JSON', authentication: credentials,
                                         httpMode: 'POST', url: pipelineUrl, requestBody: body,
-                                        customHeaders: [[name: 'Content-Type', value: 'multipart/form-data;boundary="' + boundary + '"']])
+                                        customHeaders: [[name: 'Content-Type',
+                                                         value: 'multipart/form-data;charset=UTF-8;boundary="' + boundary + '"']])
         if (importRequest.status == 202) {
             def importJob = readJSON(text: importRequest.content)
             String jobUrl = new java.net.URI(pipelineUrl).resolve(importJob['finished-job']) as String
