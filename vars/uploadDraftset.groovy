@@ -24,7 +24,7 @@ def call(String datasetLabel, csvs) {
             echo "Uploading ${csv}"
             runPipeline("${PIPELINE}/ons-table2qb.core/data-cube/import",
                     newJobDraft.id, credentials, [[name: 'observations-csv',
-                                                   file: [name: csv, type: 'text/csv']],
+                                                   file: [name: csv, type: 'text/csv;charset=UTF-8']],
                                                   [name: 'dataset-name', value: datasetLabel]])
         }
     }
