@@ -19,7 +19,7 @@ def call(String datasetLabel, csvs) {
         drafter.deleteGraph(PMD, credentials, newJobDraft.id,
                 "http://gss-data.org.uk/graph/${datasetPath}")
         drafter.addData(PMD, credentials, newJobDraft.id,
-                readFile("out/dataset.trig"), "application/trig")
+                readFile("out/dataset.trig"), "application/trig;charset=UTF-8")
         csvs.each { csv ->
             echo "Uploading ${csv}"
             runPipeline("${PIPELINE}/ons-table2qb.core/data-cube/import",
