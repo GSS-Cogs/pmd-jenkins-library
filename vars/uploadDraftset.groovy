@@ -5,7 +5,7 @@ def call(String datasetLabel, csvs, String mapping=null) {
         String credentials = config['credentials']
         String PIPELINE = config['pipeline_api']
         if (!mapping) {
-            if (fileExists 'metadata/columns.csv') {
+            if (fileExists('metadata/columns.csv')) {
                 mapping = 'metadata/columns.csv'
             } else {
                 mapping = config['default_mapping']
