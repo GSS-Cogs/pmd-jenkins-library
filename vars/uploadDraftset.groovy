@@ -15,8 +15,10 @@ def call(String datasetLabel, csvs, String mapping=null) {
             def response = httpRequest(
                     httpMode: 'GET',
                     url: mapping)
-            writeFile file: 'out/columns.csv', text: response.content
-            mapping = 'out/columns.csv'
+            dir ('metadata') {
+                writeFile file: 'columns.csv', text: response.content
+            }
+            mapping = 'metadata/columns.csv'
         }
         def drafts = drafter.listDraftsets(PMD, credentials, 'owned')
         def jobDraft = drafts.find { it['display-name'] == env.JOB_NAME }
