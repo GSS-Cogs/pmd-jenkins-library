@@ -31,7 +31,6 @@ def call(csvs, String mapping=null) {
                 .replaceAll('[^\\w/]', '-')
                 .replaceAll('-+', '-')
                 .replaceAll('-\$', '')
-        }
         String datasetGraph = "${baseURI}/graph/${datasetPath}"
         String metadataGraph = "${datasetGraph}/metadata"
         drafter.deleteGraph(PMD, credentials, newJobDraft.id, metadataGraph)
