@@ -1,4 +1,4 @@
-def call(csvs, String mapping=null) {
+def call(csvs, String mapping=null, oldLabel=null) {
     configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
         def config = readJSON(text: readFile(file: configfile))
         String PMD = config['pmd_api']
@@ -35,6 +35,16 @@ def call(csvs, String mapping=null) {
         String metadataGraph = "${datasetGraph}/metadata"
         drafter.deleteGraph(PMD, credentials, newJobDraft.id, metadataGraph)
         drafter.deleteGraph(PMD, credentials, newJobDraft.id, datasetGraph)
+        if (oldLabel) {
+            String oldDatasetPath = oldLabel
+                    .replaceAll('[^\\w/]', '-')
+                    .replaceAll('-+', '-')
+                    .replaceAll('-\$', '')
+            String oldDatasetGraph = "${baseURI}/graph/${oldDatasetPath}"
+            String oldMetadataGraph = "${oldDatasetGraph}/metadata"
+            drafter.deleteGraph(PMD, credentials, newJobDraft.id, oldMetadataGraph)
+            drafter.deleteGraph(PMD, credentials, newJobDraft.id, oldDatasetGraph)
+        }
         drafter.addData(PMD, credentials, newJobDraft.id,
                 readFile("out/dataset.trig"), "application/trig;charset=UTF-8")
 
