@@ -35,7 +35,8 @@ def call(csvs, String mapping=null, String oldLabel=null) {
         String metadataGraph = "${datasetGraph}/metadata"
         drafter.deleteGraph(PMD, credentials, newJobDraft.id, metadataGraph)
         drafter.deleteGraph(PMD, credentials, newJobDraft.id, datasetGraph)
-        if (oldLabel != null) {
+        if (oldLabel) {
+            echo "Deleting old graphs from label ${oldLabel}"
             String oldDatasetPath = oldLabel.toLowerCase()
                     .replaceAll('[^\\w/]', '-')
                     .replaceAll('-+', '-')
