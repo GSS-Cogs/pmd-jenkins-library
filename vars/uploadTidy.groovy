@@ -22,9 +22,11 @@ def call(csvs, String mapping=null, String oldLabel=null) {
             mapping = 'metadata/columns.csv'
         }
 
-        def oldJobDraft = drafter.findDraftset(PMD, credentials, env.JOB_NAME)
-        if (oldJobDraft) {
+        try {
+            def oldJobDraft = drafter.findDraftset(PMD, credentials, env.JOB_NAME)
             drafter.deleteDraftset(PMD, credentials, oldJobDraft.id)
+        } catch(e) {
+            echo 'No old job draft to delete'
         }
 
         def newJobDraft = drafter.createDraftset(PMD, credentials, env.JOB_NAME)
