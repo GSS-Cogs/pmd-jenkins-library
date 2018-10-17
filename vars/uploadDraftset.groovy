@@ -27,10 +27,7 @@ def call(String datasetLabel, csvs, String mapping=null, String datasetPath=null
         }
         def newJobDraft = drafter.createDraftset(PMD, credentials, env.JOB_NAME)
         if (!datasetPath) {
-            datasetPath = datasetLabel.toLowerCase()
-                .replaceAll('[^\\w/]', '-')
-                .replaceAll('-+', '-')
-                .replaceAll('-\$', '')
+            datasetPath = util.slugise(datasetLabel)
         }
         drafter.deleteGraph(PMD, credentials, newJobDraft.id,
                 "http://gss-data.org.uk/graph/${datasetPath}/metadata")

@@ -27,20 +27,14 @@ def call(csvs, String mapping=null, String oldLabel=null) {
             drafter.deleteDraftset(PMD, credentials, jobDraft.id)
         }
         def newJobDraft = drafter.createDraftset(PMD, credentials, env.JOB_NAME)
-        String datasetPath = env.JOB_NAME.toLowerCase()
-                .replaceAll('[^\\w/]', '-')
-                .replaceAll('-+', '-')
-                .replaceAll('-\$', '')
+        String datasetPath = util.slugise(env.JOB_NAME)
         String datasetGraph = "${baseURI}/graph/${datasetPath}"
         String metadataGraph = "${datasetGraph}/metadata"
         drafter.deleteGraph(PMD, credentials, newJobDraft.id, metadataGraph)
         drafter.deleteGraph(PMD, credentials, newJobDraft.id, datasetGraph)
         if (oldLabel) {
             echo "Deleting old graphs from label ${oldLabel}"
-            String oldDatasetPath = oldLabel.toLowerCase()
-                    .replaceAll('[^\\w/]', '-')
-                    .replaceAll('-+', '-')
-                    .replaceAll('-\$', '')
+            String oldDatasetPath = util.slugise(oldLabel)
             String oldDatasetGraph = "${baseURI}/graph/${oldDatasetPath}"
             String oldMetadataGraph = "${oldDatasetGraph}/metadata"
             drafter.deleteGraph(PMD, credentials, newJobDraft.id, oldMetadataGraph)

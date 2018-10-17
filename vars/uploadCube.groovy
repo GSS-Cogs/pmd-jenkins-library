@@ -10,10 +10,7 @@ def call(String datasetLabel, obslist) {
             drafter.deleteDraftset(PMD, credentials, jobDraft.id as String)
         }
         def newJobDraft = drafter.createDraftset(PMD, credentials, env.JOB_NAME as String)
-        String datasetPath = datasetLabel.toLowerCase()
-                .replaceAll('[^\\w/]', '-')
-                .replaceAll('-+', '-')
-                .replaceAll('-\$', '')
+        String datasetPath = util.slugise(datasetLabel)
         drafter.deleteGraph(PMD, credentials, newJobDraft.id as String,
                 "http://gss-data.org.uk/graph/${datasetPath}/metadata")
         drafter.deleteGraph(PMD, credentials, newJobDraft.id as String,
