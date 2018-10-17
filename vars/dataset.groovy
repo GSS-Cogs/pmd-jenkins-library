@@ -1,5 +1,5 @@
-def delete(String datasetLabel) {
-    echo "Deleting dataset graphs from label ${datasetLabel}"
+def delete(String datasetPath) {
+    echo "Deleting data/ meta graphs for path ${datasetPath}"
 
     configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
         def config = readJSON(text: readFile(file: configfile))
@@ -9,7 +9,6 @@ def delete(String datasetLabel) {
 
         def draftset = jobDraft.find() // assume it already exists
 
-        String datasetPath = util.slugise(datasetLabel)
         String datasetGraph = "${baseURI}/graph/${datasetPath}"
         String metadataGraph = "${datasetGraph}/metadata"
         drafter.deleteGraph(PMD, credentials, draftset.id, metadataGraph)

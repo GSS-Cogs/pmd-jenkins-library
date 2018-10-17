@@ -1,4 +1,4 @@
-def call(csvs, String mapping=null, String oldLabel=null) {
+def call(csvs, String mapping=null, String datasetPath=util.slugise(env.JOB_NAME)) {
     configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
         def config = readJSON(text: readFile(file: configfile))
         String PMD = config['pmd_api']
@@ -22,16 +22,13 @@ def call(csvs, String mapping=null, String oldLabel=null) {
             mapping = 'metadata/columns.csv'
         }
 
+        dataset.delete(datasetPath)
+
         def draft = jobDraft.find()
 
-        dataset.delete(env.JOB_NAME)
-        if (oldLabel) {
-            dataset.delete(oldLabel)
-        }
         drafter.addData(PMD, credentials, draft.id,
                 readFile("out/dataset.trig"), "application/trig;charset=UTF-8")
 
-        String datasetPath = util.slugise(env.JOB_NAME)
         csvs.each { csv ->
             echo "Uploading ${csv}"
             runPipeline("${PIPELINE}/ons-table2qb.core/data-cube/import",
