@@ -7,7 +7,7 @@ def delete(String datasetLabel) {
         String credentials = config['credentials']
         String baseURI = config['base_uri']
 
-        def draftset = drafter.findDraftset(PMD, credentials, env.JOB_NAME) // assume it already exists
+        def draftset = drafter.findDraftset(PMD, credentials, env.JOB_NAME as String) // assume it already exists
 
         String datasetPath = util.slugise(datasetLabel)
         String datasetGraph = "${baseURI}/graph/${datasetPath}"
