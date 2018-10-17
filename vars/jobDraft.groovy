@@ -21,9 +21,10 @@ def delete() {
 
 def replace() {
     try {
-      delete()
+        delete()
+    } finally {
+        create()
     }
-    create()
 }
 
 def find() {
