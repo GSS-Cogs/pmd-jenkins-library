@@ -11,6 +11,18 @@ def listDraftsets(String baseUrl, String credentials, String include) {
     }
 }
 
+def findDraftset(String baseUrl, String, credentials, String displayName) {
+    echo "Finding draftset with display name '${displayName}'"
+
+    def draftset = drafter.listDraftsets(baseUrl, credentials, 'owned')
+    def draftset = drafts.find  { it['display-name'] == displayName }
+    if (draftset) {
+        draftset
+    } else {
+        error "Can't find draftset with the display-name '${displayName}'"
+    }
+}
+
 def deleteDraftset(String baseUrl, String credentials, String id) {
     echo "Deleting draftset ${id}"
     def response = httpRequest(acceptType: 'APPLICATION_JSON',

@@ -20,8 +20,7 @@ def call(String datasetLabel, csvs, String mapping=null, String datasetPath=null
             }
             mapping = 'metadata/columns.csv'
         }
-        def drafts = drafter.listDraftsets(PMD, credentials, 'owned')
-        def jobDraft = drafts.find { it['display-name'] == env.JOB_NAME }
+        def jobDraft = drafts.findDraftset(PMD, credentials, env.JOB_NAME)
         if (jobDraft) {
             drafter.deleteDraftset(PMD, credentials, jobDraft.id)
         }
@@ -29,10 +28,7 @@ def call(String datasetLabel, csvs, String mapping=null, String datasetPath=null
         if (!datasetPath) {
             datasetPath = util.slugise(datasetLabel)
         }
-        drafter.deleteGraph(PMD, credentials, newJobDraft.id,
-                "http://gss-data.org.uk/graph/${datasetPath}/metadata")
-        drafter.deleteGraph(PMD, credentials, newJobDraft.id,
-                "http://gss-data.org.uk/graph/${datasetPath}")
+        dataset.delete(datasetLabel)
         drafter.addData(PMD, credentials, newJobDraft.id,
                 readFile("out/dataset.trig"), "application/trig;charset=UTF-8")
 

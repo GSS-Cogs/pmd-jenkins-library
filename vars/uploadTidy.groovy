@@ -21,28 +21,22 @@ def call(csvs, String mapping=null, String oldLabel=null) {
             }
             mapping = 'metadata/columns.csv'
         }
-        def drafts = drafter.listDraftsets(PMD, credentials, 'owned')
-        def jobDraft = drafts.find { it['display-name'] == env.JOB_NAME }
-        if (jobDraft) {
-            drafter.deleteDraftset(PMD, credentials, jobDraft.id)
+
+        def oldJobDraft = drafter.findDraftset(env.JOB_NAME)
+        if (oldJobDraft) {
+            drafter.deleteDraftset(PMD, credentials, oldJobDraft.id)
         }
+
         def newJobDraft = drafter.createDraftset(PMD, credentials, env.JOB_NAME)
-        String datasetPath = util.slugise(env.JOB_NAME)
-        String datasetGraph = "${baseURI}/graph/${datasetPath}"
-        String metadataGraph = "${datasetGraph}/metadata"
-        drafter.deleteGraph(PMD, credentials, newJobDraft.id, metadataGraph)
-        drafter.deleteGraph(PMD, credentials, newJobDraft.id, datasetGraph)
+
+        dataset.delete(env.JOB_NAME)
         if (oldLabel) {
-            echo "Deleting old graphs from label ${oldLabel}"
-            String oldDatasetPath = util.slugise(oldLabel)
-            String oldDatasetGraph = "${baseURI}/graph/${oldDatasetPath}"
-            String oldMetadataGraph = "${oldDatasetGraph}/metadata"
-            drafter.deleteGraph(PMD, credentials, newJobDraft.id, oldMetadataGraph)
-            drafter.deleteGraph(PMD, credentials, newJobDraft.id, oldDatasetGraph)
+            dataset.delete(oldLabel)
         }
         drafter.addData(PMD, credentials, newJobDraft.id,
                 readFile("out/dataset.trig"), "application/trig;charset=UTF-8")
 
+        String datasetPath = util.slugise(env.JOB_NAME)
         csvs.each { csv ->
             echo "Uploading ${csv}"
             runPipeline("${PIPELINE}/ons-table2qb.core/data-cube/import",
