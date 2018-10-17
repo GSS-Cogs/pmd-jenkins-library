@@ -22,7 +22,7 @@ def call(csvs, String mapping=null, String oldLabel=null) {
             mapping = 'metadata/columns.csv'
         }
 
-        def oldJobDraft = drafter.findDraftset(env.JOB_NAME)
+        def oldJobDraft = drafter.findDraftset(PMD, credentials, env.JOB_NAME)
         if (oldJobDraft) {
             drafter.deleteDraftset(PMD, credentials, oldJobDraft.id)
         }

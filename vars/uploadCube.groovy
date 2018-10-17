@@ -4,7 +4,7 @@ def call(String datasetLabel, obslist) {
         String PMD = config['pmd_api']
         String credentials = config['credentials']
         String PIPELINE = config['pipeline_api']
-        def jobDraft = drafts.findDraftset(env.JOB_NAME)
+        def jobDraft = drafter.findDraftset(PMD, credentials, env.JOB_NAME)
         if (jobDraft) {
             drafter.deleteDraftset(PMD, credentials, jobDraft.id as String)
         }

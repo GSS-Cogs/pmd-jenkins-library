@@ -20,7 +20,7 @@ def call(String datasetLabel, csvs, String mapping=null, String datasetPath=null
             }
             mapping = 'metadata/columns.csv'
         }
-        def jobDraft = drafts.findDraftset(PMD, credentials, env.JOB_NAME)
+        def jobDraft = drafter.findDraftset(PMD, credentials, env.JOB_NAME)
         if (jobDraft) {
             drafter.deleteDraftset(PMD, credentials, jobDraft.id)
         }
