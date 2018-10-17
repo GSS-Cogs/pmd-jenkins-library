@@ -1,4 +1,5 @@
 def create() {
+    echo "Creating job draft"
     configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
         def config = readJSON(text: readFile(file: configfile))
         String PMD = config['pmd_api']
@@ -9,6 +10,7 @@ def create() {
 }
 
 def delete() {
+    echo "Deleting job draft"
     configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
         def config = readJSON(text: readFile(file: configfile))
         String PMD = config['pmd_api']
@@ -20,14 +22,18 @@ def delete() {
 }
 
 def replace() {
+    echo "Replacing job draft"
     try {
         delete()
+    } catch(e) {
+        echo "(no job draft to delete)"
     } finally {
         create()
     }
 }
 
 def find() {
+    echo "Finding job draft"
     configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
         def config = readJSON(text: readFile(file: configfile))
         String PMD = config['pmd_api']
@@ -38,6 +44,7 @@ def find() {
 }
 
 def publish() {
+    echo "Publishing job draft"
     configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
         def config = readJSON(text: readFile(file: configfile))
         String PMD = config['pmd_api']
