@@ -11,7 +11,7 @@ def listDraftsets(String baseUrl, String credentials, String include) {
     }
 }
 
-def findDraftset(String baseUrl, String, credentials, String displayName) {
+def findDraftset(String baseUrl, String credentials, String displayName) {
     echo "Finding draftset with display name '${displayName}'"
 
     def drafts = drafter.listDraftsets(baseUrl, credentials, 'owned')
