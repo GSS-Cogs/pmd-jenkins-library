@@ -23,6 +23,18 @@ def findDraftset(String baseUrl, String credentials, String displayName) {
     }
 }
 
+def findOrCreateDraftset(String baseUrl, String credentials, String displayName) {
+    echo "Finding or creating draftset with display name '${displayName}'"
+
+    def drafts = listDraftsets(baseUrl, credentials, 'owned')
+    def draftset = drafts.find  { it['display-name'] == displayName }
+    if (draftset) {
+        draftset
+    } else {
+        createDraftset(baseUrl, credentials, displayName)
+    }
+}
+
 def deleteDraftset(String baseUrl, String credentials, String id) {
     echo "Deleting draftset ${id}"
     def response = httpRequest(acceptType: 'APPLICATION_JSON',

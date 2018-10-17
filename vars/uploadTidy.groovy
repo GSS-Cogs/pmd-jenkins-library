@@ -29,7 +29,7 @@ def call(csvs, String mapping=null, String oldLabel=null) {
             echo 'No old job draft to delete'
         }
 
-        def newJobDraft = drafter.createDraftset(PMD, credentials, env.JOB_NAME)
+        def newJobDraft = drafter.findOrCreateDraftset(PMD, credentials, env.JOB_NAME)
 
         dataset.delete(env.JOB_NAME)
         if (oldLabel) {
