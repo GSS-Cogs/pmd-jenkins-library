@@ -1,4 +1,7 @@
-def call(csvs, String mapping=null, String datasetPath=util.slugise(env.JOB_NAME)) {
+def call(csvs, String mapping=null, String datasetPath=null) {
+    if (!datasetPath) {
+        datasetPath = util.slugise(env.JOB_NAME)
+    }
     configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
         def config = readJSON(text: readFile(file: configfile))
         String PMD = config['pmd_api']
