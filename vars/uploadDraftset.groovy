@@ -25,7 +25,7 @@ def call(String datasetLabel, csvs, String mapping=null, String datasetPath=null
         if (!datasetPath) {
             datasetPath = util.slugise(datasetLabel)
         }
-        dataset.delete(datasetLabel)
+        dataset.delete(datasetPath)
         drafter.addData(PMD, credentials, newJobDraft.id,
                 readFile("out/dataset.trig"), "application/trig;charset=UTF-8")
 
