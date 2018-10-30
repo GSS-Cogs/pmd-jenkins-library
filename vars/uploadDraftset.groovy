@@ -21,18 +21,18 @@ def call(String datasetLabel, csvs, String mapping=null, String datasetPath=null
             mapping = 'metadata/columns.csv'
         }
         jobDraft.replace()
-        def newJobDraft = drafter.createDraftset(PMD, credentials, env.JOB_NAME)
+        def draft = jobDraft.find()
         if (!datasetPath) {
             datasetPath = util.slugise(datasetLabel)
         }
         dataset.delete(datasetPath)
-        drafter.addData(PMD, credentials, newJobDraft.id,
+        drafter.addData(PMD, credentials, draft.id,
                 readFile("out/dataset.trig"), "application/trig;charset=UTF-8")
 
         csvs.each { csv ->
             echo "Uploading ${csv}"
             runPipeline("${PIPELINE}/ons-table2qb.core/data-cube/import",
-                    newJobDraft.id, credentials, [
+                    draft.id, credentials, [
                     [name: 'observations-csv',
                      file: [name: csv, type: 'text/csv;charset=UTF-8']],
                     [name: 'dataset-name', value: datasetLabel],
