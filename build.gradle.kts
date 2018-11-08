@@ -63,5 +63,6 @@ sharedLibrary {
     dependency("org.jenkins-ci.plugins", "config-file-provider", "3.4.1")
     dependency("org.jenkinsci.plugins", "pipeline-model-extensions", "1.2.5")
     dependency("org.jenkins-ci.plugins", "http_request", "1.8.21")
+    dependency("org.jenkins-ci.plugins", "pipeline-utility-steps", "2.2.0")
   }
 }
