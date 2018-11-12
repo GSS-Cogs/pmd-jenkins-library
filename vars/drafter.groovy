@@ -59,7 +59,7 @@ def queryDraftset(String baseUrl, String credentials, String id, String query, S
     def response = httpRequest(customHeaders: [[name: 'Accept', value: type]],
             authentication: credentials,
             httpMode: 'POST',
-            url: "${baseUrl}/v1/draftsets?id=${id}&query=${sparqlQuery}&union-with-live=true")
+            url: "${baseUrl}/v1/draftset/${id}/query?query=${sparqlQuery}&union-with-live=true")
     if (response.status == 200) {
         return response.content
     } else {
