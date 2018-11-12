@@ -56,7 +56,7 @@ def createDraftset(String baseUrl, String credentials, String label) {
 def queryDraftset(String baseUrl, String credentials, String id, String query, String type) {
     echo "Querying draftset ${id}"
     String sparqlQuery = java.net.URLEncoder.encode(query, "UTF-8")
-    def response = httpRequest(acceptType: type,
+    def response = httpRequest(customHeaders: [[name: 'Accept', value: type]],
             authentication: credentials,
             httpMode: 'POST',
             url: "${baseUrl}/v1/draftsets?id=${id}&query=${sparqlQuery}&union-with-live=true")
