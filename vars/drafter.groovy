@@ -53,6 +53,20 @@ def createDraftset(String baseUrl, String credentials, String label) {
     }
 }
 
+def queryDraftset(String baseUrl, String credentials, String id, String query, String type) {
+    echo "Querying draftset ${id}"
+    String sparqlQuery = java.net.URLEncoder.encode(query, "UTF-8")
+    def response = httpRequest(acceptType: type,
+            authentication: credentials,
+            httpMode: 'POST',
+            url: "${baseUrl}/v1/draftsets?id=${id}&query=${sparqlQuery}&union-with-live=true")
+    if (response.status == 200) {
+        return response.content
+    } else {
+        error "Problem querying draftset ${response.status} : ${response.content}"
+    }
+}
+
 def deleteGraph(String baseUrl, String credentials, String id, String graph) {
     echo "Deleting graph <${graph}> from draftset ${id}"
     String encGraph = java.net.URLEncoder.encode(graph, "UTF-8")
