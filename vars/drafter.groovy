@@ -58,7 +58,7 @@ def queryDraftset(String baseUrl, String credentials, String id, String query, S
     String sparqlQuery = java.net.URLEncoder.encode(query, "UTF-8")
     def response = httpRequest(customHeaders: [[name: 'Accept', value: type]],
             authentication: credentials,
-            httpMode: 'POST',
+            httpMode: 'GET',
             validResponseCodes: '200:599',
             url: "${baseUrl}/v1/draftset/${id}/query?query=${sparqlQuery}&union-with-live=true")
     if (response.status == 200) {
