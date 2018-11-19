@@ -1,6 +1,8 @@
+import uk.org.floop.jenkins_pmd.Drafter
+
 def listDraftsets(String baseUrl, String credentials, String include) {
     echo "Listing draftsets..."
-    def response = httpRequest(acceptType: 'APPLICATION_JSON',
+/*    def response = httpRequest(acceptType: 'APPLICATION_JSON',
             authentication: credentials,
             httpMode: 'GET',
             url: "${baseUrl}/v1/draftsets?include=${include}")
@@ -8,7 +10,8 @@ def listDraftsets(String baseUrl, String credentials, String include) {
         return readJSON(text: response.content)
     } else {
         error "Problem listing draftsets ${response.status} : ${response.content}"
-    }
+    } */
+    return Drafter.listDraftsets()
 }
 
 def findDraftset(String baseUrl, String credentials, String displayName) {
