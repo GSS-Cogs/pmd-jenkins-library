@@ -1,5 +1,16 @@
 import uk.org.floop.jenkins_pmd.Drafter
 
+def call(String configId) {
+    configFileProvider([configFile(fileId: configId, variable: 'configfile')]) {
+        def config = readJSON(text: readFile(file: configfile))
+        String PMD = config['pmd_api']
+        String credentials = config['credentials']
+        withCredentials([usernamePassword(credentialsId: credentials, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+            return new Drafter(PMD, USER, PASS)
+        }
+    }
+}
+
 def listDraftsets(String baseUrl, String credentials, String include) {
     echo "Listing draftsets..."
 /*    def response = httpRequest(acceptType: 'APPLICATION_JSON',

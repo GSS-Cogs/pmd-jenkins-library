@@ -4,30 +4,37 @@ import com.cloudbees.plugins.credentials.CredentialsScope
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl
-import com.github.tomakehurst.wiremock.junit.WireMockRule
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration
+import com.github.tomakehurst.wiremock.junit.WireMockClassRule
 import org.jenkinsci.lib.configprovider.ConfigProvider
 import org.jenkinsci.plugins.configfiles.ConfigFileStore
 import org.jenkinsci.plugins.configfiles.GlobalConfigFiles
 import org.jenkinsci.plugins.configfiles.custom.CustomConfig
-
-import static com.github.tomakehurst.wiremock.client.WireMock.*
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
-
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition
 import org.jenkinsci.plugins.workflow.job.WorkflowJob
 import org.jenkinsci.plugins.workflow.job.WorkflowRun
 import org.junit.Before
+import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.jvnet.hudson.test.JenkinsRule
+
+import static com.github.tomakehurst.wiremock.client.WireMock.*
 
 class DrafterTests {
 
     @Rule
     public JenkinsRule rule = new JenkinsRule()
 
+    @ClassRule
+    public static WireMockClassRule wireMockRule = new WireMockClassRule(WireMockConfiguration.options()
+            .dynamicPort()
+            .usingFilesUnderClasspath("test/resources")
+    )
+
     @Rule
-    public WireMockRule wireMockRule = new WireMockRule(8123)
+    public WireMockClassRule instanceRule = wireMockRule;
+
 
     @Before
     void configureGlobalGitLibraries() {
@@ -43,13 +50,13 @@ class DrafterTests {
                 .getExtensionList(ConfigProvider.class)
                 .get(CustomConfig.CustomConfigProvider.class)
         globalConfigFiles.save(
-                new CustomConfig("pmd", "config.json", "Details of endpoint URLs and credentials", '''{
-  "pmd_api": "https://production-drafter-ons-alpha.publishmydata.com",
+                new CustomConfig("pmd", "config.json", "Details of endpoint URLs and credentials", """{
+  "pmd_api": "http://localhost:${wireMockRule.port()}",
   "credentials": "onspmd",
-  "pipeline_api": "http://production-grafter-ons-alpha.publishmydata.com/v1/pipelines",
+  "pipeline_api": "http://localhost:${wireMockRule.port()}",
   "default_mapping": "https://github.com/ONS-OpenData/ref_trade/raw/master/columns.csv",
   "base_uri": "http://gss-data.org.uk"
-}''', configProvider.getProviderId()))
+}""", configProvider.getProviderId()))
     }
 
     @Before
@@ -86,19 +93,19 @@ class DrafterTests {
     }
 
     @Test
-    void "testing library that uses declarative pipeline libraries"() {
+    void "listDraftsets"() {
         stubFor(get(urlMatching("/v1/draftsets.*"))
-                .willReturn(okJson('{"blah"}')))
+                .willReturn(ok().withBodyFile("listDraftsets.json")))
         final CpsFlowDefinition flow = new CpsFlowDefinition('''
-        
-        echo drafter.listDraftsets('http://localhost:8123', null, 'true')
-    '''.stripIndent(), true)
+        node {
+            echo drafter("pmd").listDraftsets()[0].id
+        }'''.stripIndent(), true)
         final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
         workflowJob.definition = flow
 
         final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
-        rule.assertLogContains('Listing draftsets...', firstResult)
         verify(getRequestedFor(urlEqualTo("/v1/draftsets")))
+        rule.assertLogContains('de305d54-75b4-431b-adb2-eb6b9e546014', firstResult)
     }
 
 }
