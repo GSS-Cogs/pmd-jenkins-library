@@ -1,0 +1,31 @@
+title,name,component_attachment,property_template,value_template,datatype,value_transformation
+Age,age,qb:dimension,http://purl.org/linked-data/sdmx/2009/dimension#age,http://gss-data.org.uk/def/concept/ages/{age},string,slugize
+Area of Destination or Origin,area_of_destination_or_origin,qb:dimension,http://gss-data.org.uk/def/dimension/area-of-destination-or-origin,http://statistics.data.gov.uk/id/statistical-geography/{area_of_destination_or_origin},string,
+CI,ci,qb:attribute,http://gss-data.org.uk/def/attribute/ci,,number,
+Citizenship,citizenship,qb:dimension,http://gss-data.org.uk/def/dimension/citizenship,http://gss-data.org.uk/def/concept/citizenship/{citizenship},string,slugize
+Count,count,qb:measure,http://gss-data.org.uk/def/measure/count,,number,
+Country of Residence,country_of_residence,qb:dimension,http://gss-data.org.uk/def/dimension/residence,http://gss-data.org.uk/def/concept/country-of-residence/{country_of_residence},string,slugize
+Flow,migration,qb:dimension,http://gss-data.org.uk/def/dimension/migration,http://gss-data.org.uk/def/concept/migration-directions/{migration},string,slugize
+Geography,geography,qb:dimension,http://purl.org/linked-data/sdmx/2009/dimension#refArea,http://statistics.data.gov.uk/id/statistical-geography/{geography},string,
+Measure Type,measure_type,qb:dimension,http://purl.org/linked-data/cube#measureType,http://gss-data.org.uk/def/measure/{measure_type},string,slugize
+Mid Year,mid_year,qb:dimension,http://purl.org/linked-data/sdmx/2009/dimension#refPeriod,http://reference.data.gov.uk/id/gregorian-interval/{+mid_year},string,
+Migration,migration_type,qb:dimension,http://gss-data.org.uk/def/dimension/migration-type,http://gss-data.org.uk/def/concept/migration-types/{migration_type},string,slugize
+Note,note,qb:attribute,http://purl.org/linked-data/sdmx/2009/attribute#comment,,string,
+Occupation,occupation,qb:dimension,http://gss-data.org.uk/def/dimension/occupation,http://gss-data.org.uk/def/concept/occupations/{occupation},string,slugize
+Registration Geography,registration_geography,qb:dimension,http://purl.org/linked-data/sdmx/2009/dimension#refArea,http://gss-data.org.uk/def/concept/registration-geography/{registration_geography},string,slugize
+Period,period,qb:dimension,http://purl.org/linked-data/sdmx/2009/dimension#refPeriod,http://reference.data.gov.uk/id/{+period},string,
+Reason for migration,reason_for_migration,qb:dimension,http://gss-data.org.uk/def/dimension/reason-for-migration,http://gss-data.org.uk/def/concept/reasons-for-migration/{reason_for_migration},string,slugize
+Revision,revision,qb:dimension,http://gss-data.org.uk/def/dimension/revision,http://gss-data.org.uk/def/concept/revisions/{revision},string,slugize
+Sex,sex,qb:dimension,http://purl.org/linked-data/sdmx/2009/dimension#sex,http://purl.org/linked-data/sdmx/2009/code#sex-{sex},string,
+Unit,unit,qb:attribute,http://purl.org/linked-data/sdmx/2009/attribute#unitMeasure,http://gss-data.org.uk/def/concept/measurement-units/{unit},string,unitize
+Value,value,,http://gss-data.org.uk/def/measure/{measure_type},,number,
+Year,year,qb:dimension,http://purl.org/linked-data/sdmx/2009/dimension#refPeriod,http://reference.data.gov.uk/id/year/{year},string,
+Migration Flow,migration_flow,qb:dimension,http://gss-data.org.uk/def/dimension/migration,http://gss-data.org.uk/def/concept/migration-directions/{migration_flow},string,slugize
+Population Change Component,population_change_component,qb:dimension,http://gss-data.org.uk/def/dimension/population-change-component,http://gss-data.org.uk/def/concept/population-change-component/{population_change_component},string,slugize
+IPS Citizenship,ips_citizenship,qb:dimension,http://gss-data.org.uk/def/dimension/citizenship,http://gss-data.org.uk/def/concept/ips-citizenship/{ips_citizenship},string,
+LTIM Citizenship,ltim_citizenship,qb:dimension,http://gss-data.org.uk/def/dimension/citizenship,http://gss-data.org.uk/def/concept/ltim-citizenship/{ltim_citizenship},string,slugize
+Applicant type,applicant_type,qb:dimension,http://gss-data.org.uk/def/dimension/applicant-type,http://gss-data.org.uk/def/concept/ho-applicant-types/{applicant_type},string,slugize
+Application category,application_category,qb:dimension,http://gss-data.org.uk/def/dimension/application-category,http://gss-data.org.uk/def/concept/ho-application-category/{application_category},string,slugize
+Application type,application_type,qb:dimension,http://gss-data.org.uk/def/dimension/application-type,http://gss-data.org.uk/def/concept/ho-application-types/{application_type},string,slugize
+Country of nationality,ho_citizenship,qb:dimension,http://gss-data.org.uk/def/dimension/citizenship,http://gss-data.org.uk/def/concept/ho-citizenship/{ho_citizenship},string,slugize
+Resolution,resolution,qb:dimension,http://gss-data.org.uk/def/dimension/resolution,http://gss-data.org.uk/def/concept/ho-application-resolutions/{resolution},string,slugize

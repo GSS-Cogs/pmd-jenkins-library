@@ -1,24 +1,18 @@
+import uk.org.floop.jenkins_pmd.PMD
+
 def create() {
     echo "Creating job draft"
-    configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
-        def config = readJSON(text: readFile(file: configfile))
-        String PMD = config['pmd_api']
-        String credentials = config['credentials']
 
-        drafter.createDraftset(PMD, credentials, env.JOB_NAME)
-    }
+    PMD pmd = pmdConfig("pmd")
+    pmd.drafter.createDraftset(env.JOB_NAME)
 }
 
 def delete() {
     echo "Deleting job draft"
-    configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
-        def config = readJSON(text: readFile(file: configfile))
-        String PMD = config['pmd_api']
-        String credentials = config['credentials']
 
-        def draft = drafter.findDraftset(PMD, credentials, env.JOB_NAME)
-        drafter.deleteDraftset(PMD, credentials, draft.id)
-    }
+    PMD pmd = pmdConfig("pmd")
+    def draft = pmd.drafter.findDraftset(env.JOB_NAME)
+    pmd.drafter.deleteDraftset(draft.id)
 }
 
 def replace() {
@@ -34,23 +28,15 @@ def replace() {
 
 def find() {
     echo "Finding job draft"
-    configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
-        def config = readJSON(text: readFile(file: configfile))
-        String PMD = config['pmd_api']
-        String credentials = config['credentials']
 
-        drafter.findDraftset(PMD, credentials, env.JOB_NAME)
-    }
+    PMD pmd = pmdConfig("pmd")
+    pmd.drafter.findDraftset(env.JOB_NAME)
 }
 
 def publish() {
     echo "Publishing job draft"
-    configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
-        def config = readJSON(text: readFile(file: configfile))
-        String PMD = config['pmd_api']
-        String credentials = config['credentials']
 
-        def draft = drafter.findDraftset(PMD, credentials, env.JOB_NAME)
-        drafter.publishDraftset(PMD, credentials, draft.id)
-    }
+    PMD pmd = pmdConfig("pmd")
+    def draft = pmd.drafter.findDraftset(env.JOB_NAME)
+    pmd.drafter.publishDraftset(draft.id)
 }

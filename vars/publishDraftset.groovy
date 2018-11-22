@@ -1,5 +1,5 @@
 def call() {
-    configFileProvider([configFile(fileId: 'pmd', variable: 'configfile')]) {
+    configFileProvider([configFile(fileId: 'pmdConfig', variable: 'configfile')]) {
         def config = readJSON(text: readFile(file: configfile))
         String PMD = config['pmd_api']
         String credentials = config['credentials']

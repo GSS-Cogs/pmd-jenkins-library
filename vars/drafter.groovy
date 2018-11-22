@@ -1,70 +1,42 @@
 import uk.org.floop.jenkins_pmd.Drafter
+import uk.org.floop.jenkins_pmd.PMD
+import uk.org.floop.jenkins_pmd.PMDConfig
 
 def call(String configId) {
     configFileProvider([configFile(fileId: configId, variable: 'configfile')]) {
-        def config = readJSON(text: readFile(file: configfile))
-        String PMD = config['pmd_api']
-        String credentials = config['credentials']
-        withCredentials([usernamePassword(credentialsId: credentials, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-            return new Drafter(PMD, USER, PASS)
+        PMDConfig config = new PMDConfig(readJSON(text: readFile(file: configfile)))
+        withCredentials([usernamePassword(credentialsId: config.credentials, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+            return new PMD(config, USER as String, PASS as String).getDrafter()
         }
     }
 }
 
 def listDraftsets(String baseUrl, String credentials, String include) {
     echo "Listing draftsets..."
-/*    def response = httpRequest(acceptType: 'APPLICATION_JSON',
-            authentication: credentials,
-            httpMode: 'GET',
-            url: "${baseUrl}/v1/draftsets?include=${include}")
-    if (response.status == 200) {
-        return readJSON(text: response.content)
-    } else {
-        error "Problem listing draftsets ${response.status} : ${response.content}"
-    } */
-    return Drafter.listDraftsets()
+
+    PMD pmd = pmdConfig("pmd")
+    return pmd.drafter.listDraftsets()
 }
 
 def findDraftset(String baseUrl, String credentials, String displayName) {
     echo "Finding draftset with display name '${displayName}'"
 
-    def drafts = listDraftsets(baseUrl, credentials, 'owned')
-    def draftset = drafts.find  { it['display-name'] == displayName }
-    if (draftset) {
-        draftset
-    } else {
-        error "Can't find draftset with the display-name '${displayName}'"
-    }
+    PMD pmd = pmdConfig("pmd")
+    pmd.drafter.findDraftset(displayName)
 }
 
 def deleteDraftset(String baseUrl, String credentials, String id) {
     echo "Deleting draftset ${id}"
-    def response = httpRequest(acceptType: 'APPLICATION_JSON',
-            authentication: credentials,
-            httpMode: 'DELETE',
-            url: "${baseUrl}/v1/draftset/${id}")
-    if (response.status == 202) {
-        def job = readJSON(text: response.content)
-        waitForJob(
-                "${baseUrl}${job['finished-job']}" as String,
-                credentials, job['restart-id'] as String)
-    } else {
-        error "Problem deleting draftset ${response.status} : ${response.content}"
-    }
+
+    PMD pmd = pmdConfig("pmd")
+    pmd.drafter.deleteDraftset(id)
 }
 
 def createDraftset(String baseUrl, String credentials, String label) {
     echo "Creating draftset ${label}"
-    String displayName = java.net.URLEncoder.encode(label, "UTF-8")
-    def response = httpRequest(acceptType: 'APPLICATION_JSON',
-            authentication: credentials,
-            httpMode: 'POST',
-            url: "${baseUrl}/v1/draftsets?display-name=${displayName}")
-    if (response.status == 200) {
-        return readJSON(text: response.content)
-    } else {
-        error "Problem creating draftset ${response.status} : ${response.content}"
-    }
+
+    PMD pmd = pmdConfig("pmd")
+    pmd.drafter.createDraftset(label)
 }
 
 def queryDraftset(String baseUrl, String credentials, String id, String query, String type) {
@@ -84,16 +56,8 @@ def queryDraftset(String baseUrl, String credentials, String id, String query, S
 
 def deleteGraph(String baseUrl, String credentials, String id, String graph) {
     echo "Deleting graph <${graph}> from draftset ${id}"
-    String encGraph = java.net.URLEncoder.encode(graph, "UTF-8")
-    def response = httpRequest(acceptType: 'APPLICATION_JSON',
-                               authentication: credentials,
-                               httpMode: 'DELETE',
-                               url: "${baseUrl}/v1/draftset/${id}/graph?graph=${encGraph}&silent=true")
-    if (response.status == 200) {
-        return readJSON(text: response.content)
-    } else {
-        error "Problem deleting graph ${response.status} : ${response.content}"
-    }
+    PMD pmd = pmdConfig("pmd")
+    pmd.drafter.deleteGraph(id, graph)
 }
 
 def addData(String baseUrl, String credentials, String id, data, String type, String graph=null) {
