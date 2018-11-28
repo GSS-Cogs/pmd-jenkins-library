@@ -29,14 +29,21 @@ class DrafterTests {
 
     @ClassRule
     public static WireMockClassRule wireMockRule = new WireMockClassRule(WireMockConfiguration.options()
-            //.dynamicPort()
-            .port(8123)
+            .dynamicPort()
+            //.port(8123)
             .usingFilesUnderClasspath("test/resources")
     )
 
     @Rule
-    public WireMockClassRule instanceRule = wireMockRule;
+    public WireMockClassRule instanceRule = wireMockRule
 
+    @ClassRule
+    public static WireMockClassRule cacheWireMockRule = new WireMockClassRule(WireMockConfiguration.options()
+            .dynamicPort()
+    )
+
+    @Rule
+    public WireMockClassRule cacheRule = cacheWireMockRule
 
     @Before
     void configureGlobalGitLibraries() {
@@ -57,7 +64,10 @@ class DrafterTests {
   "credentials": "onspmd",
   "pipeline_api": "http://localhost:${wireMockRule.port()}",
   "default_mapping": "https://github.com/ONS-OpenData/ref_trade/raw/master/columns.csv",
-  "base_uri": "http://gss-data.org.uk"
+  "base_uri": "http://gss-data.org.uk",
+  "empty_cache": "http://localhost:${cacheWireMockRule.port()}/_clear_cache",
+  "sync_search": "http://localhost:${cacheWireMockRule.port()}/_sync_search",
+  "cache_credentials": "cachepmd"
 }""", configProvider.getProviderId()))
     }
 
@@ -67,6 +77,10 @@ class DrafterTests {
                 CredentialsScope.GLOBAL,
                 "onspmd", "Access to PMD APIs", "admin", "admin")
         SystemCredentialsProvider.getInstance().getCredentials().add(key)
+        StandardUsernamePasswordCredentials cacheKey = new UsernamePasswordCredentialsImpl(
+                CredentialsScope.GLOBAL,
+                "cachepmd", "Access to PMD cache buster", "cache", "cache")
+        SystemCredentialsProvider.getInstance().getCredentials().add(cacheKey)
         SystemCredentialsProvider.getInstance().save()
     }
 
@@ -96,7 +110,7 @@ class DrafterTests {
 
     @Test
     void "listDraftsets"() {
-        stubFor(get(urlMatching("/v1/draftsets.*"))
+        instanceRule.stubFor(get(urlMatching("/v1/draftsets.*"))
                 .withHeader("Accept", equalTo("application/json"))
                 .withBasicAuth("admin", "admin")
                 .willReturn(ok()
@@ -111,63 +125,63 @@ class DrafterTests {
         workflowJob.definition = flow
 
         final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
-        verify(getRequestedFor(urlEqualTo("/v1/draftsets")))
+        instanceRule.verify(getRequestedFor(urlEqualTo("/v1/draftsets")))
         rule.assertLogContains('de305d54-75b4-431b-adb2-eb6b9e546014', firstResult)
     }
 
     @Test
     void "uploadTidy"() {
-        stubFor(post("/v1/draftsets?display-name=project")
+        instanceRule.stubFor(post("/v1/draftsets?display-name=project")
                 .withHeader("Accept", equalTo("application/json"))
                 .withBasicAuth("admin", "admin")
                 .willReturn(seeOther("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0")))
-        stubFor(get(urlMatching("/v1/draftsets.*"))
+        instanceRule.stubFor(get(urlMatching("/v1/draftsets.*"))
                 .withHeader("Accept", equalTo("application/json"))
                 .withBasicAuth("admin", "admin")
                 .willReturn(ok()
                     .withBodyFile("listDraftsets.json")
                     .withHeader("Content-Type", "application/json")))
-        stubFor(get("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0")
+        instanceRule.stubFor(get("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0")
                 .withHeader("Accept", equalTo("application/json"))
                 .withBasicAuth("admin", "admin")
                 .willReturn(ok()
                     .withBodyFile("newDraftset.json")
                     .withHeader("Content-Type", "application/json")))
-        stubFor(delete("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0")
+        instanceRule.stubFor(delete("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0")
                 .withHeader("Accept", equalTo("application/json"))
                 .withBasicAuth("admin", "admin")
                 .willReturn(aResponse()
                     .withStatus(202)
                     .withBodyFile("deleteJob.json")
                     .withHeader("Content-Type", "application/json")))
-        stubFor(delete(urlMatching("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0/graph.*"))
+        instanceRule.stubFor(delete(urlMatching("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0/graph.*"))
                 .withHeader("Accept", equalTo("application/json"))
                 .withBasicAuth("admin", "admin")
                 .willReturn(aResponse()
                     .withStatus(200)
                     .withBodyFile("deleteGraph.json")
                     .withHeader("Content-Type", "application/json")))
-        stubFor(put("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0/data")
+        instanceRule.stubFor(put("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0/data")
                 .withHeader("Accept", equalTo("application/json"))
                 .withBasicAuth("admin", "admin")
                 .willReturn(aResponse()
                     .withStatus(202)
                     .withBodyFile("addDataJob.json")
                     .withHeader("Content-Type", "application/json")))
-        stubFor(get("/v1/status/finished-jobs/2c4111e5-a299-4526-8327-bad5996de400").inScenario("Delete draftset")
+        instanceRule.stubFor(get("/v1/status/finished-jobs/2c4111e5-a299-4526-8327-bad5996de400").inScenario("Delete draftset")
                 .whenScenarioStateIs(Scenario.STARTED)
                 .withHeader("Accept", equalTo("application/json"))
                 .withBasicAuth("admin", "admin")
                 .willReturn(aResponse().withStatus(404).withBodyFile('notFinishedJob.json'))
                 .willSetStateTo("Finished"))
-        stubFor(get("/v1/status/finished-jobs/2c4111e5-a299-4526-8327-bad5996de400").inScenario("Delete draftset")
+        instanceRule.stubFor(get("/v1/status/finished-jobs/2c4111e5-a299-4526-8327-bad5996de400").inScenario("Delete draftset")
                 .whenScenarioStateIs("Finished")
                 .withHeader("Accept", equalTo("application/json"))
                 .withBasicAuth("admin", "admin")
                 .willReturn(ok()
                     .withBodyFile("finishedJobOk.json")))
-        stubFor(get("/columns.csv").willReturn(ok().withBodyFile('columns.csv')))
-        stubFor(post("/v1/pipelines/ons-table2qb.core/data-cube/import")
+        instanceRule.stubFor(get("/columns.csv").willReturn(ok().withBodyFile('columns.csv')))
+        instanceRule.stubFor(post("/v1/pipelines/ons-table2qb.core/data-cube/import")
                 .withHeader('Accept', equalTo('application/json'))
                 .withBasicAuth('admin', 'admin')
 /*                .withMultipartRequestBody(
@@ -176,7 +190,7 @@ class DrafterTests {
                             .withHeader('Content-Type', equalTo('text/csv'))
                             .withBody(equalTo('Dummy,CSV'))) */
                 .willReturn(aResponse().withStatus(202).withBodyFile('cubeImportJob.json')))
-        stubFor(get('/status/finished-jobs/4fc9ad42-f964-4f56-a1ab-a00bd622b84c')
+        instanceRule.stubFor(get('/status/finished-jobs/4fc9ad42-f964-4f56-a1ab-a00bd622b84c')
                 .withHeader('Accept', equalTo('application/json'))
                 .withBasicAuth('admin', 'admin')
                 .willReturn(ok().withBodyFile('finishedImportJobOk.json')))
@@ -195,34 +209,36 @@ class DrafterTests {
         workflowJob.definition = flow
 
         final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
-        verify(postRequestedFor(urlEqualTo('/v1/pipelines/ons-table2qb.core/data-cube/import'))
+        instanceRule.verify(postRequestedFor(urlEqualTo('/v1/pipelines/ons-table2qb.core/data-cube/import'))
                 .withHeader('Accept', equalTo('application/json')))
 
     }
 
     @Test
     void "publish draftset"() {
-        stubFor(post(urlMatching("/v1/draftset/.*/publish"))
+        instanceRule.stubFor(post(urlMatching("/v1/draftset/.*/publish"))
                 .withHeader("Accept", equalTo("application/json"))
                 .withBasicAuth("admin", "admin")
                 .willReturn(aResponse()
                     .withStatus(202)
                     .withBodyFile("publicationJob.json")
                     .withHeader("Content-Type", "application/json")))
-        stubFor(post("/v1/draftsets?display-name=project")
+        instanceRule.stubFor(post("/v1/draftsets?display-name=project")
                 .withHeader("Accept", equalTo("application/json"))
                 .withBasicAuth("admin", "admin")
                 .willReturn(seeOther("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0")))
-        stubFor(get(urlMatching("/v1/draftsets.*"))
+        instanceRule.stubFor(get(urlMatching("/v1/draftsets.*"))
                 .withHeader("Accept", equalTo("application/json"))
                 .withBasicAuth("admin", "admin")
                 .willReturn(ok()
                 .withBodyFile("listDraftsets.json")
                 .withHeader("Content-Type", "application/json")))
-        stubFor(get('/v1/status/finished-jobs/2c4111e5-a299-4526-8327-bad5996de400')
+        instanceRule.stubFor(get('/v1/status/finished-jobs/2c4111e5-a299-4526-8327-bad5996de400')
                 .withHeader('Accept', equalTo('application/json'))
                 .withBasicAuth('admin', 'admin')
                 .willReturn(ok().withBodyFile('finishedPublicationJobOk.json')))
+        cacheRule.stubFor(get('/_clear_cache').withBasicAuth('cache', 'cache').willReturn(ok()))
+        cacheRule.stubFor(get('/_sync_search').withBasicAuth('cache', 'cache').willReturn(ok()))
         final CpsFlowDefinition flow = new CpsFlowDefinition('''
         node {
             jobDraft.publish()
@@ -231,7 +247,7 @@ class DrafterTests {
         workflowJob.definition = flow
 
         final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
-        verify(postRequestedFor(urlEqualTo("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0/publish")))
+        instanceRule.verify(postRequestedFor(urlEqualTo("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0/publish")))
         rule.assertLogContains('Publishing job draft', firstResult)
     }
 

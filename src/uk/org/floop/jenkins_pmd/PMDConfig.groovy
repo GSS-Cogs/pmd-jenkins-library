@@ -9,5 +9,5 @@ class PMDConfig implements Serializable {
     String base_uri
     String empty_cache
     String sync_search
-
+    String cache_credentials
 }

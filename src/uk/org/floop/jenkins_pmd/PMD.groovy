@@ -5,9 +5,9 @@ class PMD implements Serializable {
     Drafter drafter
     Pipelines pipelines
 
-    PMD(PMDConfig config, String user, String pass) {
+    PMD(PMDConfig config, String user, String pass, String cacheUser, String cachePass) {
         this.config = config
-        this.drafter = new Drafter(this, user, pass)
+        this.drafter = new Drafter(this, user, pass, cacheUser, cachePass)
         this.pipelines = new Pipelines(this, user, pass)
     }
 }

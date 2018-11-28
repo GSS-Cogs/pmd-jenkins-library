@@ -12,8 +12,8 @@ import org.apache.http.util.EntityUtils
 class Drafter implements Serializable {
     private PMD pmd
     private URI apiBase
-    private HttpHost host
-    private String user, pass
+    private HttpHost host, cacheHost
+    private String user, pass, cacheUser, cachePass
 
     enum Include {
         ALL("all"), OWNED("owned"), CLAIMABLE("claimable")
@@ -23,18 +23,31 @@ class Drafter implements Serializable {
         }
     }
 
-    Drafter(PMD pmd, String user, String pass) {
+    Drafter(PMD pmd, String user, String pass, String cacheUser, String cachePass) {
         this.pmd = pmd
         this.apiBase = new URI(pmd.config.pmd_api)
         this.host = new HttpHost(apiBase.getHost(), apiBase.getPort(), apiBase.getScheme())
         this.user = user
         this.pass = pass
+        if (pmd.config.empty_cache) {
+            URI cacheBase = new URI(pmd.config.empty_cache)
+            this.cacheHost = new HttpHost(cacheBase.getHost(), cacheBase.getPort(), cacheBase.getScheme())
+            this.cacheUser = cacheUser
+            this.cachePass = cachePass
+        }
     }
 
     private Executor getExec() {
-        Executor.newInstance()
+        Executor exec = Executor.newInstance()
                 .auth(this.host, this.user, this.pass)
                 .authPreemptive(this.host)
+        if (pmd.config.cache_credentials) {
+            return exec
+                    .auth(this.cacheHost, this.cacheUser, this.cachePass)
+                    .authPreemptive(this.cacheHost)
+        } else {
+            return exec
+        }
     }
 
     def listDraftsets(Include include=Include.ALL) {
