@@ -170,6 +170,11 @@ class DrafterTests {
         stubFor(post("/v1/pipelines/ons-table2qb.core/data-cube/import")
                 .withHeader('Accept', equalTo('application/json'))
                 .withBasicAuth('admin', 'admin')
+/*                .withMultipartRequestBody(
+                    aMultipart()
+                            .withName('observations-csv')
+                            .withHeader('Content-Type', equalTo('text/csv'))
+                            .withBody(equalTo('Dummy,CSV'))) */
                 .willReturn(aResponse().withStatus(202).withBodyFile('cubeImportJob.json')))
         stubFor(get('/status/finished-jobs/4fc9ad42-f964-4f56-a1ab-a00bd622b84c')
                 .withHeader('Accept', equalTo('application/json'))
@@ -190,6 +195,9 @@ class DrafterTests {
         workflowJob.definition = flow
 
         final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
+        verify(postRequestedFor(urlEqualTo('/v1/pipelines/ons-table2qb.core/data-cube/import'))
+                .withHeader('Accept', equalTo('application/json')))
+
     }
 
 }
