@@ -7,5 +7,7 @@ class PMDConfig implements Serializable {
     String pipeline_api
     String default_mapping
     String base_uri
+    String empty_cache
+    String sync_search
 
 }

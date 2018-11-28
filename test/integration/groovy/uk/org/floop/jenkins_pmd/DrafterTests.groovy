@@ -200,4 +200,40 @@ class DrafterTests {
 
     }
 
+    @Test
+    void "publish draftset"() {
+        stubFor(post(urlMatching("/v1/draftset/.*/publish"))
+                .withHeader("Accept", equalTo("application/json"))
+                .withBasicAuth("admin", "admin")
+                .willReturn(aResponse()
+                    .withStatus(202)
+                    .withBodyFile("publicationJob.json")
+                    .withHeader("Content-Type", "application/json")))
+        stubFor(post("/v1/draftsets?display-name=project")
+                .withHeader("Accept", equalTo("application/json"))
+                .withBasicAuth("admin", "admin")
+                .willReturn(seeOther("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0")))
+        stubFor(get(urlMatching("/v1/draftsets.*"))
+                .withHeader("Accept", equalTo("application/json"))
+                .withBasicAuth("admin", "admin")
+                .willReturn(ok()
+                .withBodyFile("listDraftsets.json")
+                .withHeader("Content-Type", "application/json")))
+        stubFor(get('/v1/status/finished-jobs/2c4111e5-a299-4526-8327-bad5996de400')
+                .withHeader('Accept', equalTo('application/json'))
+                .withBasicAuth('admin', 'admin')
+                .willReturn(ok().withBodyFile('finishedPublicationJobOk.json')))
+        final CpsFlowDefinition flow = new CpsFlowDefinition('''
+        node {
+            jobDraft.publish()
+        }'''.stripIndent(), true)
+        final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
+        workflowJob.definition = flow
+
+        final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
+        verify(postRequestedFor(urlEqualTo("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0/publish")))
+        rule.assertLogContains('Publishing job draft', firstResult)
+    }
+
+
 }

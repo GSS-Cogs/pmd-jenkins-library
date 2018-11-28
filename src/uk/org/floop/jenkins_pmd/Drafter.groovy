@@ -96,7 +96,7 @@ class Drafter implements Serializable {
             def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
             waitForJob(apiBase.resolve(jobObj['finished-job'] as String), jobObj['restart-id'] as String)
         } else {
-            throw new DrafterException("Problem deleting draftset ${jobObj['message']}")
+            throw new DrafterException("Problem deleting draftset ${errorMsg(response)}")
         }
     }
 
@@ -163,6 +163,37 @@ class Drafter implements Serializable {
         } else {
             throw new DrafterException("Can't find draftset with the display-name '${displayName}'")
         }
+
+    }
+
+    def publishDraftset(String id) {
+        String path = "/v1/draftset/${id}/publish"
+        Executor exec = getExec()
+        HttpResponse response = exec.execute(
+                Request.Post(apiBase.resolve(path))
+                        .addHeader("Accept", "application/json")
+                        .userAgent(PMDConfig.UA)
+        ).returnResponse()
+        if (response.getStatusLine().statusCode == 202) {
+            def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
+            waitForJob(apiBase.resolve(jobObj['finished-job'] as String), jobObj['restart-id'] as String)
+            if (pmd.config.empty_cache) {
+                exec.execute(
+                        Request.Put(pmd.config.empty_cache)
+                                .addHeader("Accept", "application/json")
+                                .userAgent(PMDConfig.UA))
+            }
+            if (pmd.config.sync_search) {
+                exec.execute(
+                        Request.Put(pmd.config.sync_search)
+                                .addHeader("Accept", "application/json")
+                                .userAgent(PMDConfig.UA))
+            }
+
+        } else {
+            throw new DrafterException("Problem publishing draftset ${errorMsg(response)}")
+        }
+
 
     }
 
