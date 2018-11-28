@@ -20,8 +20,7 @@ class Pipelines implements Serializable {
     Pipelines(PMD pmd, String user, String pass) {
         this.pmd = pmd
         this.apiBase = new URI(pmd.config.pipeline_api)
-        this.host = new HttpHost(apiBase.getHost(), (apiBase.getPort() != -1) ? apiBase.getPort() :
-                apiBase.getScheme() == "http" ? 80 : 443)
+        this.host = new HttpHost(apiBase.getHost(), apiBase.getPort(), apiBase.getScheme())
         this.user = user
         this.pass = pass
         this.basicAuth = "${user}:${pass}".bytes.encodeBase64()
