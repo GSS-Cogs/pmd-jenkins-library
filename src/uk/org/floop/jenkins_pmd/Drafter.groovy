@@ -1,6 +1,7 @@
 package uk.org.floop.jenkins_pmd
 
 import groovy.json.JsonSlurper
+import hudson.FilePath
 import org.apache.http.HttpHost
 import org.apache.http.HttpResponse
 import org.apache.http.client.fluent.Executor
@@ -145,7 +146,7 @@ class Drafter implements Serializable {
                 Request.Put(apiBase.resolve(path))
                         .addHeader("Accept", "application/json")
                         .userAgent(PMDConfig.UA)
-                        .bodyFile(new File(fileName), ContentType.create(mimeType, encoding))
+                        .bodyStream(new FilePath(new File(fileName)).read(), ContentType.create(mimeType, encoding))
         ).returnResponse()
         if (response.getStatusLine().statusCode == 202) {
             def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))

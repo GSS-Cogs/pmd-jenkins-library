@@ -2,6 +2,7 @@ package uk.org.floop.jenkins_pmd
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+import hudson.FilePath
 import org.apache.http.HttpHost
 import org.apache.http.HttpResponse
 import org.apache.http.client.fluent.Executor
@@ -46,7 +47,7 @@ class Pipelines implements Serializable {
         ]))
         body.addBinaryBody(
                 'observations-csv',
-                new FileInputStream(observationsFilename),
+                new FilePath(new File(observationsFilename)).read(),
                 ContentType.create('text/csv', 'UTF-8'),
                 observationsFilename
         )
@@ -60,7 +61,7 @@ class Pipelines implements Serializable {
                     .addHeader('Accept', 'text/csv')
                     .execute().returnContent().asStream()
         } else {
-            mappingStream = new FileInputStream(mapping)
+            mappingStream = new FilePath(mapping).read()
         }
         body.addBinaryBody(
                 'columns-csv',
