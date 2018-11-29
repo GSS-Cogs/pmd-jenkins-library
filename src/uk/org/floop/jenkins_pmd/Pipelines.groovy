@@ -83,10 +83,4 @@ class Pipelines implements Serializable {
     }
 }
 
-class PipelineException extends Throwable {
-    String message
-
-    PipelineException(String message) {
-        this.message = message
-    }
-}
+class PipelineException extends Exception { }

@@ -19,7 +19,7 @@ def replace() {
     echo "Replacing job draft"
     try {
         delete()
-    } catch(e) {
+    } catch(Exception e) {
         echo "(no job draft to delete)"
     } finally {
         create()

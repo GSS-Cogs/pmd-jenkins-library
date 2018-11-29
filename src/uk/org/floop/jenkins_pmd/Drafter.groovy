@@ -212,11 +212,4 @@ class Drafter implements Serializable {
 
 }
 
-class DrafterException extends Throwable {
-    String message
-
-    DrafterException(String message) {
-        this.message = message
-    }
-
-}
+class DrafterException extends Exception { }

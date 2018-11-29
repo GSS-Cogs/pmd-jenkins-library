@@ -251,5 +251,34 @@ class DrafterTests {
         rule.assertLogContains('Publishing job draft', firstResult)
     }
 
+    @Test
+    void "replace non-existant draftset"() {
+        instanceRule.stubFor(get(urlMatching("/v1/draftsets.*"))
+                .withHeader("Accept", equalTo("application/json"))
+                .withBasicAuth("admin", "admin")
+                .willReturn(ok()
+                .withBodyFile("listDraftsetsWithoutProject.json")
+                .withHeader("Content-Type", "application/json")))
+        instanceRule.stubFor(post("/v1/draftsets?display-name=project")
+                .withHeader("Accept", equalTo("application/json"))
+                .withBasicAuth("admin", "admin")
+                .willReturn(seeOther("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0")))
+        instanceRule.stubFor(get("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0")
+                .withHeader("Accept", equalTo("application/json"))
+                .withBasicAuth("admin", "admin")
+                .willReturn(ok()
+                .withBodyFile("newDraftset.json")
+                .withHeader("Content-Type", "application/json")))
+        final CpsFlowDefinition flow = new CpsFlowDefinition('''
+        node {
+            jobDraft.replace()
+        }'''.stripIndent(), true)
+        final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
+        workflowJob.definition = flow
+
+        final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
+        //instanceRule.verify(postRequestedFor(urlEqualTo("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0/publish")))
+        rule.assertLogContains('no job draft to delete', firstResult)
+    }
 
 }
