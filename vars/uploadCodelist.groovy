@@ -8,6 +8,9 @@ def call(String csv, String name) {
 
         def draft = jobDraft.find()
 
+        string codelistGraph = "${baseURI}/graph/${util.slugise(name)}"
+        drafter.deleteGraph(PMD, credentials, draft.id, codelistGraph)
+
         runPipeline("${PIPELINE}/ons-table2qb.core/codelist/import",
                 draft.id, credentials, [[name: 'codelist-csv',
                                          file: [name: csv, type: 'text/csv']],
