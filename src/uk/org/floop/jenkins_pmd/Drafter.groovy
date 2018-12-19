@@ -1,6 +1,7 @@
 package uk.org.floop.jenkins_pmd
 
 import groovy.json.JsonSlurper
+import groovy.transform.InheritConstructors
 import hudson.FilePath
 import org.apache.http.HttpHost
 import org.apache.http.HttpResponse
@@ -71,46 +72,88 @@ class Drafter implements Serializable {
     def createDraftset(String label) {
         String displayName = URLEncoder.encode(label, "UTF-8")
         String path = "/v1/draftsets?display-name=${displayName}"
-        HttpResponse response = getExec().execute(
-                        Request.Post(apiBase.resolve(path))
-                                .addHeader("Accept", "application/json")
-                                .userAgent(PMDConfig.UA)
-                ).returnResponse()
-        if (response.getStatusLine().statusCode == 200) {
-            return new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
-        } else {
-            throw new DrafterException("Problem creating draftset ${errorMsg(response)}")
+        int retries = 5
+        while (retries > 0) {
+            HttpResponse response = getExec().execute(
+                            Request.Post(apiBase.resolve(path))
+                                    .addHeader("Accept", "application/json")
+                                    .userAgent(PMDConfig.UA)
+                    ).returnResponse()
+            if (response.getStatusLine().statusCode == 200) {
+                return new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
+            } else if (response.getStatusLine().statusCode == 503) {
+                waitForLock()
+            } else {
+                throw new DrafterException("Problem creating draftset ${errorMsg(response)}")
+            }
+            retries = retries - 1
+        }
+        throw new DrafterException("Problem creating draftset, maximum retries reached while waiting for lock.")
+    }
+
+    def waitForLock() {
+        Boolean waiting = true
+        int holdOffTime = 5
+        while(waiting) {
+            sleep(holdOffTime * 1000)
+            HttpResponse response = getExec().execute(
+                    Request.Get(apiBase.resolve('/status/writes-locked'))
+                            .addHeader('Accept', 'application/json')
+                            .userAgent(PMDConfig.UA)
+            ).returnResponse()
+            if (response.getStatusLine().statusCode == 200) {
+                waiting = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
+            } else {
+                throw new DrafterException("Problem waiting for write-lock ${errorMsg(response)}")
+            }
+            if (waiting && (holdOffTime < 60)) {
+                holdOffTime = holdOffTime * 2
+            }
         }
     }
 
     def deleteGraph(String draftsetId, String graph) {
         String encGraph = URLEncoder.encode(graph, "UTF-8")
         String path = "/v1/draftset/${draftsetId}/graph?graph=${encGraph}&silent=true"
-        HttpResponse response = getExec().execute(
-                Request.Delete(apiBase.resolve(path))
-                        .addHeader("Accept", "application/json")
-                        .userAgent(PMDConfig.UA)
-        ).returnResponse()
-        if (response.getStatusLine().statusCode == 200) {
-            return new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
-        } else {
-            throw new DrafterException("Problem deleting graph ${errorMsg(response)}")
+        int retries = 5
+        while (retries > 0) {
+            HttpResponse response = getExec().execute(
+                    Request.Delete(apiBase.resolve(path))
+                            .addHeader("Accept", "application/json")
+                            .userAgent(PMDConfig.UA)
+            ).returnResponse()
+            if (response.getStatusLine().statusCode == 200) {
+                return new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
+            } else if (response.getStatusLine().statusCode == 503) {
+                waitForLock()
+            } else {
+                throw new DrafterException("Problem deleting graph ${errorMsg(response)}")
+            }
+            retries = retries - 1
         }
+        throw new DrafterException("Problem deleting graph, maximum retries reached while waiting for lock.")
     }
 
     def deleteDraftset(String draftsetId) {
         String path = "/v1/draftset/${draftsetId}"
-        HttpResponse response = getExec().execute(
-                        Request.Delete(apiBase.resolve(path))
-                                .addHeader("Accept", "application/json")
-                                .userAgent(PMDConfig.UA)
-        ).returnResponse()
-        if (response.getStatusLine().statusCode == 202) {
-            def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
-            waitForJob(apiBase.resolve(jobObj['finished-job'] as String), jobObj['restart-id'] as String)
-        } else {
-            throw new DrafterException("Problem deleting draftset ${errorMsg(response)}")
+        int retries = 5
+        while (retries > 0) {
+            HttpResponse response = getExec().execute(
+                            Request.Delete(apiBase.resolve(path))
+                                    .addHeader("Accept", "application/json")
+                                    .userAgent(PMDConfig.UA)
+            ).returnResponse()
+            if (response.getStatusLine().statusCode == 202) {
+                def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
+                waitForJob(apiBase.resolve(jobObj['finished-job'] as String), jobObj['restart-id'] as String)
+            } else if (response.getStatusLine().statusCode == 503) {
+                waitForLock()
+            } else {
+                throw new DrafterException("Problem deleting draftset ${errorMsg(response)}")
+            }
+            retries = retries - 1
         }
+        throw new DrafterException("Problem deleting draftset, maximum retries reached while waiting for lock.")
     }
 
     def waitForJob(URI finishedJob, String restartId) {
@@ -154,18 +197,26 @@ class Drafter implements Serializable {
             String encGraph = URLEncoder.encode(graph, "UTF-8")
             path = path + "?graph=${encGraph}"
         }
-        HttpResponse response = getExec().execute(
-                Request.Put(apiBase.resolve(path))
-                        .addHeader("Accept", "application/json")
-                        .userAgent(PMDConfig.UA)
-                        .bodyStream(new FilePath(new File(fileName)).read(), ContentType.create(mimeType, encoding))
-        ).returnResponse()
-        if (response.getStatusLine().statusCode == 202) {
-            def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
-            waitForJob(apiBase.resolve(jobObj['finished-job'] as String), jobObj['restart-id'] as String)
-        } else {
-            throw new DrafterException("Problem adding data ${errorMsg(response)}")
+        int retries = 5
+        while (retries > 0) {
+            HttpResponse response = getExec().execute(
+                    Request.Put(apiBase.resolve(path))
+                            .addHeader("Accept", "application/json")
+                            .userAgent(PMDConfig.UA)
+                            .bodyStream(new FilePath(new File(fileName)).read(), ContentType.create(mimeType, encoding))
+            ).returnResponse()
+            if (response.getStatusLine().statusCode == 202) {
+                def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
+                waitForJob(apiBase.resolve(jobObj['finished-job'] as String), jobObj['restart-id'] as String)
+                return
+            } else if (response.getStatusLine().statusCode == 503) {
+                waitForLock()
+            } else {
+                throw new DrafterException("Problem adding data ${errorMsg(response)}")
+            }
+            retries = retries - 1
         }
+        throw new DrafterException("Problem adding data, maximum retries reached while waiting for lock.")
     }
 
     def findDraftset(String displayName) {
@@ -182,34 +233,40 @@ class Drafter implements Serializable {
     def publishDraftset(String id) {
         String path = "/v1/draftset/${id}/publish"
         Executor exec = getExec()
-        HttpResponse response = exec.execute(
-                Request.Post(apiBase.resolve(path))
-                        .addHeader("Accept", "application/json")
-                        .userAgent(PMDConfig.UA)
-        ).returnResponse()
-        if (response.getStatusLine().statusCode == 202) {
-            def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
-            waitForJob(apiBase.resolve(jobObj['finished-job'] as String), jobObj['restart-id'] as String)
-            if (pmd.config.empty_cache) {
-                exec.execute(
-                        Request.Put(pmd.config.empty_cache)
-                                .addHeader("Accept", "application/json")
-                                .userAgent(PMDConfig.UA))
+        int retries = 5
+        while (retries > 0) {
+            HttpResponse response = exec.execute(
+                    Request.Post(apiBase.resolve(path))
+                            .addHeader("Accept", "application/json")
+                            .userAgent(PMDConfig.UA)
+            ).returnResponse()
+            if (response.getStatusLine().statusCode == 202) {
+                def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
+                waitForJob(apiBase.resolve(jobObj['finished-job'] as String), jobObj['restart-id'] as String)
+                if (pmd.config.empty_cache) {
+                    exec.execute(
+                            Request.Put(pmd.config.empty_cache)
+                                    .addHeader("Accept", "application/json")
+                                    .userAgent(PMDConfig.UA))
+                }
+                if (pmd.config.sync_search) {
+                    exec.execute(
+                            Request.Put(pmd.config.sync_search)
+                                    .addHeader("Accept", "application/json")
+                                    .userAgent(PMDConfig.UA))
+                }
+                return
+            } else if (response.getStatusLine().statusCode == 503) {
+                waitForLock()
+            } else {
+                throw new DrafterException("Problem publishing draftset ${errorMsg(response)}")
             }
-            if (pmd.config.sync_search) {
-                exec.execute(
-                        Request.Put(pmd.config.sync_search)
-                                .addHeader("Accept", "application/json")
-                                .userAgent(PMDConfig.UA))
-            }
-
-        } else {
-            throw new DrafterException("Problem publishing draftset ${errorMsg(response)}")
+            retries = retries - 1
         }
-
-
+        throw new DrafterException("Problem publishing draftset, maximum retries reached while waiting for lock.")
     }
 
 }
 
+@InheritConstructors
 class DrafterException extends Exception { }
