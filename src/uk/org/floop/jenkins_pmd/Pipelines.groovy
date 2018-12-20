@@ -104,6 +104,18 @@ class Pipelines implements Serializable {
         body.addTextBody('codelist-name', codelistName)
         execAndWait(path, body.build())
     }
+
+    def components(String draftsetId, String csvFilename) {
+        String path = "/v1/pipelines/ons-table2qb.core/components/import"
+        MultipartEntityBuilder body = createDrafterBody(draftsetId)
+        body.addBinaryBody(
+                'components-csvv',
+                new FilePath(new File(csvFilename)).read(),
+                ContentType.create('text/csv', 'UTF-8'),
+                csvFilename
+        )
+        execAndWait(path, body.build())
+    }
 }
 
 @InheritConstructors
