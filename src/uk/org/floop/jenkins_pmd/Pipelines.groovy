@@ -109,7 +109,7 @@ class Pipelines implements Serializable {
         String path = "/v1/pipelines/ons-table2qb.core/components/import"
         MultipartEntityBuilder body = createDrafterBody(draftsetId)
         body.addBinaryBody(
-                'components-csvv',
+                'components-csv',
                 new FilePath(new File(csvFilename)).read(),
                 ContentType.create('text/csv', 'UTF-8'),
                 csvFilename
