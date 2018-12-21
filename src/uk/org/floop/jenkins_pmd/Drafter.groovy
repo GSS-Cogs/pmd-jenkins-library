@@ -146,6 +146,7 @@ class Drafter implements Serializable {
             if (response.getStatusLine().statusCode == 202) {
                 def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
                 waitForJob(apiBase.resolve(jobObj['finished-job'] as String), jobObj['restart-id'] as String)
+                return
             } else if (response.getStatusLine().statusCode == 503) {
                 waitForLock()
             } else {
