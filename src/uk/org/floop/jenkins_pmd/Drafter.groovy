@@ -191,7 +191,7 @@ class Drafter implements Serializable {
         }
     }
 
-    def addData(String draftId, String fileName, String mimeType, String encoding, String graph=null) {
+    def addData(String draftId, String source, String mimeType, String encoding, String graph=null) {
         String path = "/v1/draftset/${draftId}/data"
         if (graph) {
             String encGraph = URLEncoder.encode(graph, "UTF-8")
@@ -199,11 +199,21 @@ class Drafter implements Serializable {
         }
         int retries = 5
         while (retries > 0) {
+            InputStream streamSource
+            if (source.startsWith('http')) {
+                streamSource = Request
+                    .Get(source)
+                    .userAgent(PMDConfig.UA)
+                    .addHeader('Accept' ,mimeType)
+                    .execute().returnContent().asStream()
+            } else {
+                streamSource = new FilePath(new File(source)).read()
+            }
             HttpResponse response = getExec().execute(
                     Request.Put(apiBase.resolve(path))
                             .addHeader("Accept", "application/json")
                             .userAgent(PMDConfig.UA)
-                            .bodyStream(new FilePath(new File(fileName)).read(), ContentType.create(mimeType, encoding))
+                            .bodyStream(streamSource, ContentType.create(mimeType, encoding))
             ).returnResponse()
             if (response.getStatusLine().statusCode == 202) {
                 def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
