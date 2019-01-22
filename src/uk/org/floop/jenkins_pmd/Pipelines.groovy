@@ -13,6 +13,8 @@ import org.apache.http.entity.ContentType
 import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.apache.http.util.EntityUtils
 
+import java.nio.charset.Charset
+
 class Pipelines implements Serializable {
     private PMD pmd
     private URI apiBase
@@ -73,22 +75,26 @@ class Pipelines implements Serializable {
         )
         body.addTextBody('dataset-name', datasetName)
         body.addTextBody('dataset-slug', datasetPath)
-        InputStream mappingStream
         if (mapping.startsWith('http')) {
-            mappingStream = Request
-                    .Get(mapping)
-                    .userAgent(PMDConfig.UA)
-                    .addHeader('Accept', 'text/csv')
-                    .execute().returnContent().asStream()
+            body.add(
+                    'columns-csv',
+                    Request
+                            .Get(mapping)
+                            .connectTimeout(0).socketTimeout(0)
+                            .userAgent(PMDConfig.UA)
+                            .addHeader('Accept', 'text/csv')
+                            .execute().returnContent().asBytes(),
+                    ContentType.create('text/csv', 'UTF-8'),
+                    mapping
+            )
         } else {
-            mappingStream = new FilePath(new File(mapping)).read()
+            body.addBinaryBody(
+                    'columns-csv',
+                    new FilePath(new File(mapping)).read(),
+                    ContentType.create('text/csv', 'UTF-8'),
+                    mapping
+            )
         }
-        body.addBinaryBody(
-                'columns-csv',
-                mappingStream,
-                ContentType.create('text/csv', 'UTF-8'),
-                mapping
-        )
         execAndWait(path, body.build())
     }
 
