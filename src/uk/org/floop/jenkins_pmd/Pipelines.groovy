@@ -76,7 +76,7 @@ class Pipelines implements Serializable {
         body.addTextBody('dataset-name', datasetName)
         body.addTextBody('dataset-slug', datasetPath)
         if (mapping.startsWith('http')) {
-            body.add(
+            body.addBinaryBody(
                     'columns-csv',
                     Request
                             .Get(mapping)
