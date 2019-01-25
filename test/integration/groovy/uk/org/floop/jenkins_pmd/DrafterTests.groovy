@@ -190,7 +190,7 @@ class DrafterTests {
                             .withHeader('Content-Type', equalTo('text/csv'))
                             .withBody(equalTo('Dummy,CSV'))) */
                 .willReturn(aResponse().withStatus(202).withBodyFile('cubeImportJob.json')))
-        instanceRule.stubFor(get('/status/finished-jobs/4fc9ad42-f964-4f56-a1ab-a00bd622b84c')
+        instanceRule.stubFor(get('/v1/status/finished-jobs/4fc9ad42-f964-4f56-a1ab-a00bd622b84c')
                 .withHeader('Accept', equalTo('application/json'))
                 .withBasicAuth('admin', 'admin')
                 .willReturn(ok().withBodyFile('finishedImportJobOk.json')))
