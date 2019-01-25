@@ -97,7 +97,7 @@ class Drafter implements Serializable {
         while(waiting) {
             sleep(holdOffTime * 1000)
             HttpResponse response = getExec().execute(
-                    Request.Get(apiBase.resolve('/status/writes-locked'))
+                    Request.Get(apiBase.resolve('/v1/status/writes-locked'))
                             .addHeader('Accept', 'application/json')
                             .userAgent(PMDConfig.UA)
             ).returnResponse()
