@@ -1,6 +1,6 @@
 import uk.org.floop.jenkins_pmd.PMD
 
-def call(csvs, String mapping=null, String datasetPath=null) {
+def call(csvs, String mapping=null, String datasetPath=null, String metadata=null) {
     if (!datasetPath) {
         datasetPath = util.slugise(env.JOB_NAME)
     }
@@ -20,7 +20,11 @@ def call(csvs, String mapping=null, String datasetPath=null) {
 
     def draft = jobDraft.find()
 
-    pmd.drafter.addData(draft.id as String,"${WORKSPACE}/out/dataset.trig","application/trig","UTF-8")
+    if (metadata) {
+        pmd.drafter.addData(draft.id as String,"${WORKSPACE}/out/${metadata}","application/trig","UTF-8")
+    } else {
+        pmd.drafter.addData(draft.id as String,"${WORKSPACE}/out/dataset.trig","application/trig","UTF-8")
+    }
 
     csvs.each { csv ->
         echo "Uploading ${csv}"
