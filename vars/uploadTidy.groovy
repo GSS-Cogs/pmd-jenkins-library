@@ -21,7 +21,7 @@ def call(csvs, String mapping=null, String datasetPath=null, String metadata=nul
     def draft = jobDraft.find()
 
     if (metadata) {
-        pmd.drafter.addData(draft.id as String,"${WORKSPACE}/out/${metadata}","application/trig","UTF-8")
+        pmd.drafter.addData(draft.id as String,"${WORKSPACE}/${metadata}","application/trig","UTF-8")
     } else {
         pmd.drafter.addData(draft.id as String,"${WORKSPACE}/out/dataset.trig","application/trig","UTF-8")
     }
