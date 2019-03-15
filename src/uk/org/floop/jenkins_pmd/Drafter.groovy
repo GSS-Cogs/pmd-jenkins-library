@@ -277,6 +277,11 @@ class Drafter implements Serializable {
         throw new DrafterException("Problem publishing draftset, maximum retries reached while waiting for lock.")
     }
 
+    def getDraftsetEndpoint(String id) {
+        String path = "/v1/draftset/${id}/query"
+        apiBase.resolve(path)
+    }
+
 }
 
 @InheritConstructors
