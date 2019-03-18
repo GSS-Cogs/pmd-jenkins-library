@@ -72,7 +72,7 @@ def call(body) {
                         String dspath = util.slugise(env.JOB_NAME)
                         String dsgraph = "${pmd.config.base_uri}/graph/${dspath}"
                         withCredentials([usernamePassword(credentialsId: pmd.config.credentials, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                            sh "sparql-test-runner -t /usr/local/tests -s ${endpoint} -a '${USER}:${PASS}' -p \"dsgraph=<${dsgraph}>\""
+                            sh "sparql-test-runner -t /usr/local/tests -s ${endpoint}?union-with-live=true -a '${USER}:${PASS}' -p \"dsgraph=<${dsgraph}>\""
                         }
                     }
                 }
