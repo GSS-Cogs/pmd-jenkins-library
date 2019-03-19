@@ -99,9 +99,6 @@ def call(body) {
                     }
                 }
             }
-            success {
-                build job: '../GDP-tests', wait: false
-            }
         }
 
     }
