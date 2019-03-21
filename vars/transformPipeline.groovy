@@ -69,7 +69,7 @@ def call(body) {
                             def datasets = []
                             String dspath = util.slugise(env.JOB_NAME)
                             for (def observations : findFiles(glob: 'out/*.csv')) {
-                                dataset = [
+                                def dataset = [
                                         "csv": "out/${observations.name}",
                                         "metadata": "out/${observations.name}-metadata.trig",
                                         "path": "${dspath}/${observations.name.take(observations.name.lastIndexOf('.'))}"
