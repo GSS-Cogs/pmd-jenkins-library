@@ -43,7 +43,17 @@ def call(body) {
                 steps {
                     script {
                         ansiColor('xterm') {
-                            sh "csvlint -s schema.json"
+                            if (fileExists('schema.json')) {
+                                sh "csvlint -s schema.json"
+                            } else {
+                                def schemas = []
+                                for (def schema : findFiles(glob: 'out/*-schema.json')) {
+                                    schemas.add("out/${schema.name}")
+                                }
+                                for (String schema : schemas) {
+                                    sh "csvlint -s ${schema}"
+                                }
+                            }
                         }
                     }
                 }
@@ -52,8 +62,27 @@ def call(body) {
                 steps {
                     script {
                         jobDraft.replace()
-                        uploadTidy(['out/observations.csv'],
-                                "https://ons-opendata.github.io/${pipelineParams.refFamily}/columns.csv")
+                        if (fileExists('out/observations.csv')) {
+                            uploadTidy(['out/observations.csv'],
+                                    "https://ons-opendata.github.io/ref_alcohol/columns.csv")
+                        } else {
+                            def datasets = []
+                            String dspath = util.slugise(env.JOB_NAME)
+                            for (def observations : findFiles(glob: 'out/*.csv')) {
+                                dataset = [
+                                        "csv": "out/${observations.name}",
+                                        "metadata": "out/${observations.name}-metadata.trig",
+                                        "path": "${dspath}/${observations.name.take(observations.name.lastIndexOf('.'))}"
+                                ]
+                                datasets.add(dataset)
+                            }
+                            for (def dataset : datasets) {
+                                uploadTidy([dataset.csv],
+                                        "https://ons-opendata.github.io/ref_alcohol/columns.csv",
+                                        dataset.path,
+                                        dataset.metadata)
+                            }
+                        }
                     }
                 }
             }
@@ -70,9 +99,19 @@ def call(body) {
                         String draftId = pmd.drafter.findDraftset(env.JOB_NAME).id
                         String endpoint = pmd.drafter.getDraftsetEndpoint(draftId)
                         String dspath = util.slugise(env.JOB_NAME)
-                        String dsgraph = "${pmd.config.base_uri}/graph/${dspath}"
+                        def dsgraphs = []
+                        if (fileExists('out/observations.csv')) {
+                            dsgraphs.add("${pmd.config.base_uri}/graph/${dspath}")
+                        } else {
+                            for (def observations : findFiles(glob: 'out/*.csv')) {
+                                String basename = observations.name.take(observations.name.lastIndexOf('.'))
+                                dsgraphs.add("${pmd.config.base_uri}/graph/${dspath}/${basename}")
+                            }
+                        }
                         withCredentials([usernamePassword(credentialsId: pmd.config.credentials, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                            sh "sparql-test-runner -t /usr/local/tests -s ${endpoint}?union-with-live=true -a '${USER}:${PASS}' -p \"dsgraph=<${dsgraph}>\""
+                            for (String dsgraph : dsgraphs) {
+                                sh "sparql-test-runner -t /usr/local/tests -s ${endpoint}?union-with-live=true -a '${USER}:${PASS}' -p \"dsgraph=<${dsgraph}>\" -r reports/TESTS-${dsgraph.substring(dsgraph.lastIndexOf('/')+1)}.xml"
+                            }
                         }
                     }
                 }
