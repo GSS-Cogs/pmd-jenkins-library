@@ -127,15 +127,15 @@ def call(body) {
         post {
             always {
                 script {
+                    if (pipelineParams.containsKey('trelloCard')) {
+                        updateCard pipelineParams.trelloCard
+                    }
                     archiveArtifacts artifacts: 'out/*', excludes: 'out/*.html'
-                    junit 'reports/**/*.xml'
+                    junit allowEmptyResults: true, testResults: 'reports/**/*.xml'
                     publishHTML([
                             allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true,
                             reportDir: 'out', reportFiles: 'main.html',
                             reportName: 'Transform'])
-                    if (pipelineParams.containsKey('trelloCard')) {
-                        updateCard pipelineParams.trelloCard
-                    }
                 }
             }
         }
