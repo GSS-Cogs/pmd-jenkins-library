@@ -28,6 +28,9 @@ def call(body) {
                 steps {
                     script {
                         ansiColor('xterm') {
+                            if (fileExists('main.py')) {
+                                sh "jupytext --to notebook main.py"
+                            }
                             sh "jupyter-nbconvert --output-dir=out --ExecutePreprocessor.timeout=None --execute 'main.ipynb'"
                         }
                     }
