@@ -67,7 +67,7 @@ def call(body) {
                         jobDraft.replace()
                         if (fileExists('out/observations.csv')) {
                             uploadTidy(['out/observations.csv'],
-                                    "https://ons-opendata.github.io/${pipelineParams.refFamily}/columns.csv")
+                                    "https://gss-cogs.github.io/${pipelineParams.refFamily}/columns.csv")
                         } else {
                             def datasets = []
                             String dspath = util.slugise(env.JOB_NAME)
@@ -81,7 +81,7 @@ def call(body) {
                             }
                             for (def dataset : datasets) {
                                 uploadTidy([dataset.csv],
-                                        "https://ons-opendata.github.io/${pipelineParams.refFamily}/columns.csv",
+                                        "https://gss-cogs.github.io/${pipelineParams.refFamily}/columns.csv",
                                         dataset.path,
                                         dataset.metadata)
                             }
