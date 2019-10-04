@@ -130,9 +130,10 @@ def call(body) {
         post {
             always {
                 script {
-                    if (pipelineParams.containsKey('trelloCard')) {
-                        updateCard pipelineParams.trelloCard
-                    }
+                    step([$class: 'GitHubIssueNotifier',
+                          issueAppend: true,
+                          issueLabel: '',
+                          issueTitle: '$JOB_NAME $BUILD_DISPLAY_NAME failed'])
                     archiveArtifacts artifacts: 'out/*', excludes: 'out/*.html'
                     junit allowEmptyResults: true, testResults: 'reports/**/*.xml'
                     publishHTML([
