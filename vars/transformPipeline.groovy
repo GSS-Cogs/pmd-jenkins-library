@@ -21,7 +21,7 @@ def call(body) {
             stage('Transform') {
                 agent {
                     docker {
-                        image 'cloudfluff/databaker'
+                        image 'gsscogs/databaker'
                         reuseNode true
                     }
                 }
@@ -39,7 +39,7 @@ def call(body) {
             stage('Validate CSV') {
                 agent {
                     docker {
-                        image 'cloudfluff/csvlint'
+                        image 'gsscogs/csvlint'
                         reuseNode true
                     }
                 }
@@ -92,7 +92,7 @@ def call(body) {
             stage('Test draft dataset') {
                 agent {
                     docker {
-                        image 'cloudfluff/gdp-sparql-tests'
+                        image 'gsscogs/gdp-sparql-tests'
                         reuseNode true
                     }
                 }
