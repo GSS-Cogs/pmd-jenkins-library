@@ -20,6 +20,8 @@ def call(body) {
 		    script {
 			ansiColor('xterm') {
 			    sh "csvlint -s codelists-metadata.json"
+			    sh "csvlint columns.csv"
+			    sh "csvlint components.csv"
 			}
 		    }
 		}
