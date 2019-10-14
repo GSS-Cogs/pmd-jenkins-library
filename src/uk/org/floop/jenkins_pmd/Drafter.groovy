@@ -255,16 +255,24 @@ class Drafter implements Serializable {
                 def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
                 waitForJob(apiBase.resolve(jobObj['finished-job'] as String), jobObj['restart-id'] as String)
                 if (pmd.config.empty_cache) {
-                    exec.execute(
-                            Request.Put(pmd.config.empty_cache)
-                                    .addHeader("Accept", "application/json")
-                                    .userAgent(PMDConfig.UA))
+                    try {
+                        exec.execute(
+                                Request.Put(pmd.config.empty_cache)
+                                        .addHeader("Accept", "application/json")
+                                        .userAgent(PMDConfig.UA))
+                    } catch (org.apache.http.impl.execchain.RequestAbortedException e) {
+                        println('Request aborted while attempting to empty cache.')
+                    }
                 }
                 if (pmd.config.sync_search) {
-                    exec.execute(
-                            Request.Put(pmd.config.sync_search)
-                                    .addHeader("Accept", "application/json")
-                                    .userAgent(PMDConfig.UA))
+                    try {
+                        exec.execute(
+                                Request.Put(pmd.config.sync_search)
+                                        .addHeader("Accept", "application/json")
+                                        .userAgent(PMDConfig.UA))
+                    } catch (org.apache.http.impl.execchain.RequestAbortedException e) {
+                        println('Request aborted while attempting to sync search.')
+                    }
                 }
                 return
             } else if (response.getStatusLine().statusCode == 503) {
