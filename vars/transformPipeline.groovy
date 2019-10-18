@@ -47,14 +47,14 @@ def call(body) {
                     script {
                         ansiColor('xterm') {
                             if (fileExists('schema.json')) {
-                                sh "csvlint -s schema.json"
+                                sh "csvlint --no-verbose -s schema.json"
                             } else {
                                 def schemas = []
                                 for (def schema : findFiles(glob: 'out/*-schema.json')) {
                                     schemas.add("out/${schema.name}")
                                 }
                                 for (String schema : schemas) {
-                                    sh "csvlint -s ${schema}"
+                                    sh "csvlint --no-verbose -s ${schema}"
                                 }
                             }
                         }
