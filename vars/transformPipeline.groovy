@@ -23,6 +23,7 @@ def call(body) {
                     docker {
                         image 'gsscogs/databaker'
                         reuseNode true
+                        alwaysPull true
                     }
                 }
                 steps {
@@ -41,6 +42,7 @@ def call(body) {
                     docker {
                         image 'gsscogs/csvlint'
                         reuseNode true
+                        alwaysPull true
                     }
                 }
                 steps {
@@ -94,6 +96,7 @@ def call(body) {
                     docker {
                         image 'gsscogs/gdp-sparql-tests'
                         reuseNode true
+                        alwaysPull true
                     }
                 }
                 steps {

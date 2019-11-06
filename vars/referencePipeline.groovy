@@ -12,8 +12,9 @@ def call(body) {
 	    stage('Test') {
 		agent {
 		    docker {
-			image 'cloudfluff/csvlint'
-			reuseNode true
+				image 'cloudfluff/csvlint'
+				reuseNode true
+				alwaysPull true
 		    }
 		}
 		steps {
