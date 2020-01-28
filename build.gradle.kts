@@ -4,9 +4,9 @@ import org.gradle.kotlin.dsl.version
 import java.io.ByteArrayOutputStream
 
 plugins {
-  id("com.gradle.build-scan") version "1.16"
-  id("com.mkobit.jenkins.pipelines.shared-library") version "0.7.0"
-  id("com.github.ben-manes.versions") version "0.20.0"
+  id("com.gradle.build-scan") version "2.3"
+  id("com.mkobit.jenkins.pipelines.shared-library") version "0.10.1"
+  id("com.github.ben-manes.versions") version "0.21.0"
 }
 
 val commitSha: String by lazy {
@@ -27,8 +27,8 @@ buildScan {
 }
 
 tasks {
-  register("wrapper", Wrapper::class) {
-    gradleVersion = "4.10"
+  wrapper {
+    gradleVersion = "5.5.1"
   }
 }
 
@@ -37,11 +37,13 @@ java {
 }
 
 dependencies {
-  val spock = "org.spockframework:spock-core:1.1-groovy-2.4"
+  val spock = "org.spockframework:spock-core:1.2-groovy-2.4"
   testImplementation(spock)
-  testImplementation("org.assertj:assertj-core:3.11.1")
+  testImplementation("org.assertj:assertj-core:3.12.2")
   integrationTestImplementation(spock)
   integrationTestImplementation("com.github.tomakehurst:wiremock:2.19.0")
+  integrationTestImplementation("jakarta.xml.bind:jakarta.xml.bind-api:2.3.2")
+  integrationTestImplementation("org.glassfish.jaxb:jaxb-runtime:2.3.2")
 }
 
 jenkinsIntegration {
@@ -55,16 +57,16 @@ sharedLibrary {
   coreVersion.set(jenkinsIntegration.downloadDirectory.file("core-version.txt").map { it.asFile.readText().trim() })
   // TODO: retrieve downloaded plugin resource
   pluginDependencies {
-    dependency("org.jenkins-ci.plugins", "pipeline-build-step", "2.7")
-    dependency("org.6wind.jenkins", "lockable-resources", "2.2")
-    dependency("org.jenkinsci.plugins", "pipeline-model-api", "1.2.5")
+    dependency("org.jenkins-ci.plugins", "pipeline-build-step", "2.9")
+    dependency("org.6wind.jenkins", "lockable-resources", "2.5")
+    val declarativePluginsVersion = "1.3.9"
+    dependency("org.jenkinsci.plugins", "pipeline-model-api", declarativePluginsVersion)
     dependency("org.jenkinsci.plugins", "pipeline-model-declarative-agent", "1.1.1")
-    dependency("org.jenkinsci.plugins", "pipeline-model-definition", "1.2.5")
-    dependency("org.jenkins-ci.plugins", "config-file-provider", "3.4.1")
-    dependency("org.jenkinsci.plugins", "pipeline-model-extensions", "1.2.5")
-    dependency("org.jenkins-ci.plugins", "http_request", "1.8.21")
-    dependency("org.jenkins-ci.plugins", "pipeline-utility-steps", "2.2.0")
-    dependency("org.jenkins-ci.plugins", "config-file-provider", "3.4.1")
-    dependency("org.jenkins-ci.plugins", "credentials-binding", "1.17")
+    dependency("org.jenkinsci.plugins", "pipeline-model-definition", declarativePluginsVersion)
+    dependency("org.jenkinsci.plugins", "pipeline-model-extensions", declarativePluginsVersion)
+    dependency("org.jenkins-ci.plugins", "config-file-provider", "3.6.2")
+    dependency("org.jenkins-ci.plugins", "http_request", "1.8.24")
+    dependency("org.jenkins-ci.plugins", "pipeline-utility-steps", "2.3.1")
+    dependency("org.jenkins-ci.plugins", "credentials-binding", "1.20")
   }
 }
