@@ -41,7 +41,7 @@ dependencies {
   testImplementation(spock)
   testImplementation("org.assertj:assertj-core:3.12.2")
   integrationTestImplementation(spock)
-  integrationTestImplementation("com.github.tomakehurst:wiremock:2.19.0")
+  integrationTestImplementation("com.github.tomakehurst:wiremock:2.25.1")
   integrationTestImplementation("jakarta.xml.bind:jakarta.xml.bind-api:2.3.2")
   integrationTestImplementation("org.glassfish.jaxb:jaxb-runtime:2.3.2")
 }

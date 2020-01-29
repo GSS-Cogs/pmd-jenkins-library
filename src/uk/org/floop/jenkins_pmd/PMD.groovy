@@ -3,11 +3,12 @@ package uk.org.floop.jenkins_pmd
 class PMD implements Serializable {
     PMDConfig config
     Drafter drafter
-    Pipelines pipelines
+    String clientID, clientSecret
 
-    PMD(PMDConfig config, String user, String pass, String cacheUser, String cachePass) {
+    PMD(PMDConfig config, clientID, clientSecret) {
         this.config = config
-        this.drafter = new Drafter(this, user, pass, cacheUser, cachePass)
-        this.pipelines = new Pipelines(this, user, pass)
+        this.clientID = clientID
+        this.clientSecret = clientSecret
+        this.drafter = new Drafter(this)
     }
 }

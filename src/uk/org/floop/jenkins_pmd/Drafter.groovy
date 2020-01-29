@@ -6,15 +6,18 @@ import hudson.FilePath
 import org.apache.http.HttpHost
 import org.apache.http.HttpResponse
 import org.apache.http.client.fluent.Executor
+import org.apache.http.client.fluent.Form
 import org.apache.http.client.fluent.Request
 import org.apache.http.entity.ContentType
+import org.apache.http.message.BasicNameValuePair
 import org.apache.http.util.EntityUtils
 
 class Drafter implements Serializable {
     private PMD pmd
-    private URI apiBase
-    private HttpHost host, cacheHost
-    private String user, pass, cacheUser, cachePass
+    private URI apiBase, authToken
+    private HttpHost host
+    private String token
+    private long expires = -1
 
     enum Include {
         ALL("all"), OWNED("owned"), CLAIMABLE("claimable")
@@ -24,31 +27,34 @@ class Drafter implements Serializable {
         }
     }
 
-    Drafter(PMD pmd, String user, String pass, String cacheUser, String cachePass) {
+    Drafter(PMD pmd) {
         this.pmd = pmd
         this.apiBase = new URI(pmd.config.pmd_api)
+        this.authToken = new URI(pmd.config.oauth_token_url)
         this.host = new HttpHost(apiBase.getHost(), apiBase.getPort(), apiBase.getScheme())
-        this.user = user
-        this.pass = pass
-        if (pmd.config.empty_cache) {
-            URI cacheBase = new URI(pmd.config.empty_cache)
-            this.cacheHost = new HttpHost(cacheBase.getHost(), cacheBase.getPort(), cacheBase.getScheme())
-            this.cacheUser = cacheUser
-            this.cachePass = cachePass
-        }
     }
 
     private Executor getExec() {
         Executor exec = Executor.newInstance()
-                .auth(this.host, this.user, this.pass)
-                .authPreemptive(this.host)
-        if (pmd.config.cache_credentials) {
-            return exec
-                    .auth(this.cacheHost, this.cacheUser, this.cachePass)
-                    .authPreemptive(this.cacheHost)
-        } else {
-            return exec
+        if ((expires == -1) || ((System.currentTimeMillis() / 1000l) > expires)) {
+            def js = new JsonSlurper()
+            def response = js.parse(
+                    exec.execute(
+                            Request.Post(authToken)
+                                    .addHeader('Accept', 'application/json')
+                                    .bodyForm(Form.form()
+                                            .add("grant_type", "client_credentials")
+                                            .add("client_id", pmd.clientID)
+                                            .add("client_secret", pmd.clientSecret)
+                                            .add("audience", pmd.config.oauth_audience)
+                                            .build()
+                                    )
+                    ).returnContent().asStream()
+            )
+            this.token = response['access_token']
+            this.expires = System.currentTimeMillis() / 1000L + response['expires_in']
         }
+        return exec
     }
 
     def listDraftsets(Include include=Include.ALL) {
@@ -57,6 +63,7 @@ class Drafter implements Serializable {
         def response = js.parse(
                 getExec().execute(
                         Request.Get(apiBase.resolve(path))
+                                .addHeader("Authorization", "Bearer ${token}")
                                 .addHeader("Accept", "application/json")
                                 .userAgent(PMDConfig.UA)
                 ).returnContent().asStream()
@@ -76,6 +83,7 @@ class Drafter implements Serializable {
         while (retries > 0) {
             HttpResponse response = getExec().execute(
                             Request.Post(apiBase.resolve(path))
+                                    .addHeader("Authorization", "Bearer ${token}")
                                     .addHeader("Accept", "application/json")
                                     .userAgent(PMDConfig.UA)
                     ).returnResponse()
@@ -98,6 +106,7 @@ class Drafter implements Serializable {
             sleep(holdOffTime * 1000)
             HttpResponse response = getExec().execute(
                     Request.Get(apiBase.resolve('/v1/status/writes-locked'))
+                            .addHeader("Authorization", "Bearer ${token}")
                             .addHeader('Accept', 'application/json')
                             .userAgent(PMDConfig.UA)
             ).returnResponse()
@@ -119,6 +128,7 @@ class Drafter implements Serializable {
         while (retries > 0) {
             HttpResponse response = getExec().execute(
                     Request.Delete(apiBase.resolve(path))
+                            .addHeader("Authorization", "Bearer ${token}")
                             .addHeader("Accept", "application/json")
                             .userAgent(PMDConfig.UA)
             ).returnResponse()
@@ -140,6 +150,7 @@ class Drafter implements Serializable {
         while (retries > 0) {
             HttpResponse response = getExec().execute(
                             Request.Delete(apiBase.resolve(path))
+                                    .addHeader("Authorization", "Bearer ${token}")
                                     .addHeader("Accept", "application/json")
                                     .userAgent(PMDConfig.UA)
             ).returnResponse()
@@ -162,6 +173,7 @@ class Drafter implements Serializable {
         while (true) {
             HttpResponse jobResponse = exec.execute(
                     Request.Get(finishedJob)
+                            .addHeader("Authorization", "Bearer ${token}")
                             .setHeader("Accept", "application/json")
                             .userAgent(PMDConfig.UA)
             ).returnResponse()
@@ -202,16 +214,17 @@ class Drafter implements Serializable {
         while (retries > 0) {
             InputStream streamSource
             if (source.startsWith('http')) {
-                streamSource = Request
-                    .Get(source)
-                    .userAgent(PMDConfig.UA)
-                    .addHeader('Accept' ,mimeType)
-                    .execute().returnContent().asStream()
+                streamSource = Request.Get(source)
+                        .userAgent(PMDConfig.UA)
+                        .addHeader("Authorization", "Bearer ${token}")
+                        .addHeader('Accept' ,mimeType)
+                        .execute().returnContent().asStream()
             } else {
                 streamSource = new FilePath(new File(source)).read()
             }
             HttpResponse response = getExec().execute(
                     Request.Put(apiBase.resolve(path))
+                            .addHeader("Authorization", "Bearer ${token}")
                             .addHeader("Accept", "application/json")
                             .userAgent(PMDConfig.UA)
                             .bodyStream(streamSource, ContentType.create(mimeType, encoding))
@@ -248,32 +261,13 @@ class Drafter implements Serializable {
         while (retries > 0) {
             HttpResponse response = exec.execute(
                     Request.Post(apiBase.resolve(path))
+                            .addHeader("Authorization", "Bearer ${token}")
                             .addHeader("Accept", "application/json")
                             .userAgent(PMDConfig.UA)
             ).returnResponse()
             if (response.getStatusLine().statusCode == 202) {
                 def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
                 waitForJob(apiBase.resolve(jobObj['finished-job'] as String), jobObj['restart-id'] as String)
-                if (pmd.config.empty_cache) {
-                    try {
-                        exec.execute(
-                                Request.Put(pmd.config.empty_cache)
-                                        .addHeader("Accept", "application/json")
-                                        .userAgent(PMDConfig.UA))
-                    } catch (org.apache.http.impl.execchain.RequestAbortedException e) {
-                        println('Request aborted while attempting to empty cache.')
-                    }
-                }
-                if (pmd.config.sync_search) {
-                    try {
-                        exec.execute(
-                                Request.Put(pmd.config.sync_search)
-                                        .addHeader("Accept", "application/json")
-                                        .userAgent(PMDConfig.UA))
-                    } catch (org.apache.http.impl.execchain.RequestAbortedException e) {
-                        println('Request aborted while attempting to sync search.')
-                    }
-                }
                 return
             } else if (response.getStatusLine().statusCode == 503) {
                 waitForLock()
