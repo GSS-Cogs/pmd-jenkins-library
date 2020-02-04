@@ -3,6 +3,7 @@ package uk.org.floop.jenkins_pmd
 import groovy.json.JsonSlurper
 import groovy.transform.InheritConstructors
 import hudson.FilePath
+import org.apache.http.Consts
 import org.apache.http.HttpHost
 import org.apache.http.HttpResponse
 import org.apache.http.client.fluent.Executor
@@ -47,7 +48,7 @@ class Drafter implements Serializable {
                                             .add("client_id", pmd.clientID)
                                             .add("client_secret", pmd.clientSecret)
                                             .add("audience", pmd.config.oauth_audience)
-                                            .build()
+                                            .build(), Consts.UTF_8
                                     )
                     ).returnContent().asStream()
             )

@@ -108,7 +108,7 @@ class DrafterTests {
     @Before
     void setUpOAuthMock() {
         oauthRule.stubFor(post("/oauth/token")
-                .withHeader("Content-Type", matching("application/x-www-form-urlencoded.*"))
+                .withHeader("Content-Type", matching("application/x-www-form-urlencoded.*UTF.*"))
                 .withHeader("Accept", equalTo("application/json"))
     /*                .withRequestBody(equalToJson("""
     {
