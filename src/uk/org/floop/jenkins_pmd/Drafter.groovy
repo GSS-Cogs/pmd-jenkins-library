@@ -24,6 +24,15 @@ class Drafter implements Serializable {
         }
     }
 
+    enum Role {
+        EDITOR("editor"), PUBLISHER("publisher"), MANAGER("manager")
+        public final String value
+
+        Role(String v) {
+            this.value = v
+        }
+    }
+
     Drafter(PMD pmd, String user, String pass, String cacheUser, String cachePass) {
         this.pmd = pmd
         this.apiBase = new URI(pmd.config.pmd_api)
@@ -239,6 +248,24 @@ class Drafter implements Serializable {
             throw new DrafterException("Can't find draftset with the display-name '${displayName}'")
         }
 
+    }
+
+    def submitDraftsetTo(String id, Role role, String user) {
+        String path = "/v1/draftset/${id}/submit-to"
+        Executor exec = getExec()
+        HttpResponse response = exec.execute(
+                HttpResponse response = exec.execute(
+                Request.Post(apiBase.resolve(path))
+                        .addHeader("Accept", "application/json")
+                        .userAgent(PMDConfig.UA)
+        ).returnResponse()
+        if (response.getStatusLine().statusCode == 200) {
+            return new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
+        } else if (response.getStatusLine().statusCode == 422) {
+            throw new DrafterException("The submit request could not be processed ${errorMsg(response)}")
+        } else {
+            throw new DrafterException("Problem submitting draftset ${errorMsg(response)}")
+        }
     }
 
     def publishDraftset(String id) {
