@@ -254,7 +254,6 @@ class Drafter implements Serializable {
         String path = "/v1/draftset/${id}/submit-to"
         Executor exec = getExec()
         HttpResponse response = exec.execute(
-                HttpResponse response = exec.execute(
                 Request.Post(apiBase.resolve(path))
                         .addHeader("Accept", "application/json")
                         .userAgent(PMDConfig.UA)
