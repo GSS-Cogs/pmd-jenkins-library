@@ -241,7 +241,7 @@ class Drafter implements Serializable {
     }
 
     def findDraftset(String displayName) {
-        def drafts = listDraftsets(Include.OWNED)
+        def drafts = listDraftsets(Include.ALL)
         def draftset = drafts.find  { it['display-name'] == displayName }
         if (draftset) {
             draftset
