@@ -9,6 +9,7 @@ import org.apache.http.client.fluent.Executor
 import org.apache.http.client.fluent.Request
 import org.apache.http.entity.ContentType
 import org.apache.http.util.EntityUtils
+import org.apache.http.client.utils.URIBuilder
 
 class Drafter implements Serializable {
     private PMD pmd
@@ -253,8 +254,15 @@ class Drafter implements Serializable {
     def submitDraftsetTo(String id, Role role, String user) {
         String path = "/v1/draftset/${id}/submit-to"
         Executor exec = getExec()
+        URIBuilder uriBuilder = new URIBuilder(apiBase.resolve(path))
+        if (role != null) {
+            uriBuilder.setParameter("role", role.value)
+        }
+        if (user != null) {
+            uriBuilder.setParameter("user", user)
+        }
         HttpResponse response = exec.execute(
-                Request.Post(apiBase.resolve(path))
+                Request.Post(uriBuilder.build())
                         .addHeader("Accept", "application/json")
                         .userAgent(PMDConfig.UA)
         ).returnResponse()
