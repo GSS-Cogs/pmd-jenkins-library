@@ -9,6 +9,7 @@ import org.apache.http.client.fluent.Executor
 import org.apache.http.client.fluent.Request
 import org.apache.http.entity.ContentType
 import org.apache.http.util.EntityUtils
+import org.apache.http.client.utils.URIBuilder
 
 class Drafter implements Serializable {
     private PMD pmd
@@ -20,6 +21,15 @@ class Drafter implements Serializable {
         ALL("all"), OWNED("owned"), CLAIMABLE("claimable")
         public final String value
         Include(String v) {
+            this.value = v
+        }
+    }
+
+    enum Role {
+        EDITOR("editor"), PUBLISHER("publisher"), MANAGER("manager")
+        public final String value
+
+        Role(String v) {
             this.value = v
         }
     }
@@ -239,6 +249,30 @@ class Drafter implements Serializable {
             throw new DrafterException("Can't find draftset with the display-name '${displayName}'")
         }
 
+    }
+
+    def submitDraftsetTo(String id, Role role, String user) {
+        String path = "/v1/draftset/${id}/submit-to"
+        Executor exec = getExec()
+        URIBuilder uriBuilder = new URIBuilder(apiBase.resolve(path))
+        if (role != null) {
+            uriBuilder.setParameter("role", role.value)
+        }
+        if (user != null) {
+            uriBuilder.setParameter("user", user)
+        }
+        HttpResponse response = exec.execute(
+                Request.Post(uriBuilder.build())
+                        .addHeader("Accept", "application/json")
+                        .userAgent(PMDConfig.UA)
+        ).returnResponse()
+        if (response.getStatusLine().statusCode == 200) {
+            return new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
+        } else if (response.getStatusLine().statusCode == 422) {
+            throw new DrafterException("The submit request could not be processed ${errorMsg(response)}")
+        } else {
+            throw new DrafterException("Problem submitting draftset ${errorMsg(response)}")
+        }
     }
 
     def publishDraftset(String id) {
