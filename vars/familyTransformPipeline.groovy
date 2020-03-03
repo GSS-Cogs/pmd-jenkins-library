@@ -131,13 +131,45 @@ def call(body) {
                     }
                 }
             }
-            stage('Submit for review') {
-                steps {
-                    script {
-                        FAILED_STAGE = env.STAGE_NAME
-                        pmd = pmdConfig("pmd")
-                        String draftId = pmd.drafter.findDraftset(env.JOB_NAME).id
-                        pmd.drafter.submitDraftsetTo(draftId, uk.org.floop.jenkins_pmd.Drafter.Role.EDITOR, null)
+            stage('Draftset') {
+                parallel {
+                    stage('Submit for review') {
+                        when {
+                            expression {
+                                def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
+                                if (info.containsKey('transform') && info['transform'].containsKey('review')) {
+                                    return !info['transform']['review']
+                                } else {
+                                    return false
+                                }
+                            }
+                        }
+                        steps {
+                            script {
+                                FAILED_STAGE = env.STAGE_NAME
+                                pmd = pmdConfig("pmd")
+                                String draftId = pmd.drafter.findDraftset(env.JOB_NAME).id
+                                pmd.drafter.submitDraftsetTo(draftId, uk.org.floop.jenkins_pmd.Drafter.Role.EDITOR, null)
+                            }
+                        }
+                    }
+                    stage('Publish') {
+                        when {
+                            expression {
+                                def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
+                                if (info.containsKey('transform') && info['transform'].containsKey('review')) {
+                                    return info['transform']['review']
+                                } else {
+                                    return true
+                                }
+                            }
+                        }
+                        steps {
+                            script {
+                                FAILED_STAGE = env.STAGE_NAME
+                                jobDraft.publish()
+                            }
+                        }
                     }
                 }
             }
