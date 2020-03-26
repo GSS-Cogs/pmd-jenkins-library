@@ -50,6 +50,16 @@ def call(body) {
                         alwaysPull true
                     }
                 }
+                when {
+                    expression {
+                        def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
+                        if (info.containsKey('transform') && info['transform'].containsKey('validate')) {
+                            return info['transform']['validate']
+                        } else {
+                            return true
+                        }
+                    }
+                }
                 steps {
                     script {
                         FAILED_STAGE = env.STAGE_NAME
