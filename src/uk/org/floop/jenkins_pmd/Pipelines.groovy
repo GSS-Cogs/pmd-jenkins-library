@@ -4,6 +4,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.InheritConstructors
 import hudson.FilePath
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.apache.http.HttpEntity
 import org.apache.http.HttpHost
 import org.apache.http.HttpResponse
@@ -66,10 +67,16 @@ class Pipelines implements Serializable {
 
     def dataCube(String draftsetId, String observationsFilename, String datasetName, String datasetPath, String mapping) {
         String path = "/v1/pipelines/ons-table2qb.core/data-cube/import"
+        InputStream streamSource
         MultipartEntityBuilder body = createDrafterBody(draftsetId)
+        if (observationsFilename.endsWith('.gz')) {
+            streamSource = new GzipCompressorInputStream(new FilePath(new File(observationsFilename)).read())
+        } else {
+            streamSource = new FilePath(new File(observationsFilename)).read()
+        }
         body.addBinaryBody(
                 'observations-csv',
-                new FilePath(new File(observationsFilename)).read(),
+                streamSource,
                 ContentType.create('text/csv', 'UTF-8'),
                 observationsFilename
         )
