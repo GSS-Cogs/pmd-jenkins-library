@@ -4,7 +4,6 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.InheritConstructors
 import hudson.FilePath
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.apache.http.HttpEntity
 import org.apache.http.HttpHost
 import org.apache.http.HttpResponse
@@ -15,6 +14,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder
 import org.apache.http.util.EntityUtils
 
 import java.nio.charset.Charset
+import java.util.zip.GZIPInputStream
 
 class Pipelines implements Serializable {
     private PMD pmd
@@ -70,7 +70,7 @@ class Pipelines implements Serializable {
         InputStream streamSource
         MultipartEntityBuilder body = createDrafterBody(draftsetId)
         if (observationsFilename.endsWith('.gz')) {
-            streamSource = new GzipCompressorInputStream(new FilePath(new File(observationsFilename)).read())
+            streamSource = new GZIPInputStream(new FilePath(new File(observationsFilename)).read())
         } else {
             streamSource = new FilePath(new File(observationsFilename)).read()
         }

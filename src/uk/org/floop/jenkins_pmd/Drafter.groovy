@@ -3,7 +3,6 @@ package uk.org.floop.jenkins_pmd
 import groovy.json.JsonSlurper
 import groovy.transform.InheritConstructors
 import hudson.FilePath
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.apache.http.HttpHost
 import org.apache.http.HttpResponse
 import org.apache.http.client.fluent.Executor
@@ -11,6 +10,8 @@ import org.apache.http.client.fluent.Request
 import org.apache.http.entity.ContentType
 import org.apache.http.util.EntityUtils
 import org.apache.http.client.utils.URIBuilder
+
+import java.util.zip.GZIPInputStream
 
 class Drafter implements Serializable {
     private PMD pmd
@@ -219,7 +220,7 @@ class Drafter implements Serializable {
                     .addHeader('Accept' ,mimeType)
                     .execute().returnContent().asStream()
             } else if (source.endsWith('.gz')) {
-                streamSource = new GzipCompressorInputStream(new FilePath(new File(source)).read())
+                streamSource = new GZIPInputStream(new FilePath(new File(source)).read())
             } else {
                 streamSource = new FilePath(new File(source)).read()
             }
