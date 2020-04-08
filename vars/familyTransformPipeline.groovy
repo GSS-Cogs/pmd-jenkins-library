@@ -1,3 +1,5 @@
+import uk.org.floop.jenkins_pmd.PMD
+
 def call(body) {
     def pipelineParams = [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
@@ -105,12 +107,12 @@ def call(body) {
                                         datasets.add([
                                                 "csv": "${DATASET_DIR}/out/${csv.name}",
                                                 "metadata": "${DATASET_DIR}/out/${csv.name}-metadata.json",
-                                                "output": "${DATASET_DIR}/out/${baseName}.ttl"
+                                                "output": "${DATASET_DIR}/out/${baseName}"
                                         ])
                                     }
                                 }
                                 for (def dataset : datasets) {
-                                    sh "csv2rdf -t '${dataset.csv}' -u '${dataset.metadata}' -m annotated | gzip > '${dataset.output}.gz'"
+                                    sh "csv2rdf -t '${dataset.csv}' -u '${dataset.metadata}' -m annotated | rapper -i turtle -o ntriples - http://gss-data.org.uk | split -d -l 100000 --filter='pigz > \$FILE.nt.gz' - ${dataset.output}-"
                                 }
                             }
                         }
@@ -129,32 +131,62 @@ def call(body) {
                     }
                 }
                 stages {
-                    stage('Tidy CSV') {
+                    stage('Upload Cube') {
                         steps {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
-                                jobDraft.replace()
-                                def datasets = []
-                                String dspath = util.slugise(env.JOB_NAME)
-                                def outputFiles = findFiles(glob: "${DATASET_DIR}/out/*.csv")
-                                if (outputFiles.length == 0) {
-                                    error(message: "No output CSV files found")
-                                } else {
-                                    for (def observations : outputFiles) {
-                                        String thisPath = (outputFiles.length == 1) ? dspath : "${dspath}/${observations.name.take(observations.name.lastIndexOf('.'))}"
-                                        def dataset = [
-                                                "csv"     : "${DATASET_DIR}/out/${observations.name}",
-                                                "metadata": "${DATASET_DIR}/out/${observations.name}-metadata.trig",
-                                                "path"    : thisPath
-                                        ]
-                                        datasets.add(dataset)
+                                def pmd = pmdConfig("pmd")
+                                pmd.drafter
+                                        .listDraftsets()
+                                        .findAll { it['display-name'] == env.JOB_NAME }
+                                        .each {
+                                            pmd.drafter.deleteDraftset(it.id)
+                                        }
+                                String id = pmd.drafter.createDraftset(env.JOB_NAME).id
+                                def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
+                                if (info.containsKey('transform') && info['transform'].containsKey('to_rdf')) {
+                                    def datasets = []
+                                    String dspath = util.slugise(env.JOB_NAME)
+                                    String datasetGraph = "${pmd.config.base_uri}/graph/${dspath}"
+                                    pmd.drafter.deleteGraph(id, datasetGraph)
+                                    def outputFiles = findFiles(glob: "${DATASET_DIR}/out/*.nt.gz")
+                                    if (outputFiles.length == 0) {
+                                        error(message: "No output RDF files found")
+                                    } else {
+                                        for (def observations : outputFiles) {
+                                            pmd.drafter.addData(
+                                                    id,
+                                                    "${WORKSPACE}/${DATASET_DIR}/out/${observations.name}",
+                                                    "application/n-triples",
+                                                    "UTF-8",
+                                                    datasetGraph
+                                            )
+                                        }
                                     }
-                                }
-                                for (def dataset : datasets) {
-                                    uploadTidy([dataset.csv],
-                                            "reference/columns.csv",
-                                            dataset.path,
-                                            dataset.metadata)
+                                } else {
+                                    jobDraft.replace()
+                                    def datasets = []
+                                    String dspath = util.slugise(env.JOB_NAME)
+                                    def outputFiles = findFiles(glob: "${DATASET_DIR}/out/*.csv")
+                                    if (outputFiles.length == 0) {
+                                        error(message: "No output CSV files found")
+                                    } else {
+                                        for (def observations : outputFiles) {
+                                            String thisPath = (outputFiles.length == 1) ? dspath : "${dspath}/${observations.name.take(observations.name.lastIndexOf('.'))}"
+                                            def dataset = [
+                                                    "csv"     : "${DATASET_DIR}/out/${observations.name}",
+                                                    "metadata": "${DATASET_DIR}/out/${observations.name}-metadata.trig",
+                                                    "path"    : thisPath
+                                            ]
+                                            datasets.add(dataset)
+                                        }
+                                    }
+                                    for (def dataset : datasets) {
+                                        uploadTidy([dataset.csv],
+                                                "reference/columns.csv",
+                                                dataset.path,
+                                                dataset.metadata)
+                                    }
                                 }
                             }
                         }
@@ -239,27 +271,6 @@ def call(body) {
         post {
             always {
                 script {
-                    String main_issue
-                    if (fileExists("${DATASET_DIR}/info.json")) {
-                        def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
-                        if (info.containsKey('transform') && info['transform'].containsKey('main_issue')) {
-                            main_issue = info['transform']['main_issue']
-                        }
-                    }
-                    String issueBody = """Jenkins job result: ${currentBuild.result}
-Stage: ${FAILED_STAGE}
-[View full output]($BUILD_URL)
-"""
-                    if (main_issue) {
-                        issueBody = issueBody + """
-Blocks #${main_issue}
-"""
-                    }
-                    step([$class     : 'GitHubIssueNotifier',
-                          issueAppend: true,
-                          issueLabel : 'Jenkins',
-                          issueTitle : '$JOB_BASE_NAME failed',
-                          issueBody  : issueBody])
                     archiveArtifacts artifacts: "${DATASET_DIR}/out/*", excludes: "${DATASET_DIR}/out/*.html"
                     junit allowEmptyResults: true, testResults: 'reports/**/*.xml'
                     publishHTML([
