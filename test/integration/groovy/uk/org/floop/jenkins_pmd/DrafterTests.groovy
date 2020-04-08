@@ -7,6 +7,7 @@ import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule
 import com.github.tomakehurst.wiremock.stubbing.Scenario
+import hudson.FilePath
 import org.jenkinsci.lib.configprovider.ConfigProvider
 import org.jenkinsci.plugins.configfiles.ConfigFileStore
 import org.jenkinsci.plugins.configfiles.GlobalConfigFiles
@@ -406,6 +407,43 @@ class DrafterTests {
         final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
         instanceRule.verify(postRequestedFor(urlEqualTo('/v1/pipelines/ons-table2qb.core/data-cube/import'))
                 .withHeader('Accept', equalTo('application/json')))
+    }
+
+    @Test
+    void "addCompressedData"() {
+        instanceRule.stubFor(put("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0/data?graph=some-graph")
+                .withHeader("Accept", equalTo("application/json"))
+                .withBasicAuth("admin", "admin")
+                .withRequestBody(matching(".*prefix.*<[^ ]+>.*"))
+                .willReturn(aResponse()
+                        .withStatus(202)
+                        .withBodyFile("addDataJob.json")
+                        .withHeader("Content-Type", "application/json")))
+        instanceRule.stubFor(get("/v1/status/finished-jobs/2c4111e5-a299-4526-8327-bad5996de400")
+                .withHeader("Accept", equalTo("application/json"))
+                .withBasicAuth("admin", "admin")
+                .willReturn(ok()
+                        .withBodyFile("finishedJobOk.json")))
+
+        final CpsFlowDefinition flow = new CpsFlowDefinition('''
+        node {
+            def pmd = pmdConfig("pmd")
+            pmd.drafter.addData(
+                "4e376c57-6816-404a-8945-94849299f2a0",
+                "${WORKSPACE}/out/observations.ttl.gz",
+                "text/turtle",
+                "UTF-8",
+                "some-graph"
+            )
+        }'''.stripIndent(), true)
+        final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
+        workflowJob.definition = flow
+        FilePath workspace = rule.jenkins.getWorkspaceFor(workflowJob)
+        FilePath compressedTurtle = workspace.child("out").child("observations.ttl.gz")
+        compressedTurtle.copyFrom(new FileInputStream(new File("test/resources/__files/observations.ttl.gz")))
+
+        final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
+        rule.assertLogContains('SUCCESS', firstResult)
     }
 
 }
