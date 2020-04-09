@@ -140,8 +140,8 @@ def call(body) {
                                         .listDraftsets()
                                         .findAll { it['display-name'] == env.JOB_NAME }
                                         .each {
-                                            pmd.drafter.deleteDraftset(it.id)
-                                        }
+                                    pmd.drafter.deleteDraftset(it.id)
+                                }
                                 String id = pmd.drafter.createDraftset(env.JOB_NAME).id
                                 def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
                                 if (info.containsKey('transform') && info['transform'].containsKey('to_rdf')) {
@@ -179,6 +179,44 @@ def call(body) {
                                                     "path"    : thisPath
                                             ]
                                             datasets.add(dataset)
+
+                                            /*
+                                            The following block is temporary code that will check the dataUrl for each datacube is
+                                            correctly references in the namespace, dataset url and graph url provided by the
+                                            accompanying trig file.
+
+                                            This is intended to limit the "red screen" issues we've been encountering.
+                                            */
+                                            echo "Confirming valid url patterns."
+                                            fileContents = readFile "${DATASET_DIR}/out/${observations.name}-metadata.trig"
+                                            file.fileContents { String line ->
+                                                    // the dataUrl should be contained in the namespace
+                                                    if (line.contains("@prefix ns1:")) {
+                                                        if (!line.contains(thisPath)) {
+                                                            throw new Exception("""Aborting. The trig namespace should contain the data url,
+                                                                        got: \n\ndataUrl:\n ${thisPath} \n\nnamespace:\n ${line}.""")
+                                                        }
+                                                    }
+
+                                                    // the dataURl should also be contained in the pmd:Dataset link
+                                                    if (line.contains("a pmd:Dataset")) {
+                                                        String datasetUrl = line.split(">")[0].split("<")[1]
+                                                        if (!datasetUrl.contains(thisPath)) {
+                                                            throw new Exception("""Aborting. The trig namespace should contain the data url,
+                                                                        got: \n\ndataUrl:\n ${thisPath} \n\ndatasetlink:\n ${line}.""")
+                                                        }
+                                                    }
+
+                                                    // the dataUrl should appear (sligtly modified) in the graph url
+                                                    if (line.contains("pmd:graph")) {
+                                                        String graphUrl = line.split("<")[1].split(">")[0].replace("/graph/", "/data/")
+                                                        if (!graphUrl.contains(thisPath)) {
+                                                            throw new Exception("""Aborting. The graphUrl should contain the dataUrl (save
+                                                                        '/graph/' instead of '/data/', got: \n\ndataUrl:\n ${thisPath}
+                                                                        \n\ngraphUrl:\n ${graphUrl}.""")
+                                                        }
+                                                    }
+                                                }
                                         }
                                     }
                                     for (def dataset : datasets) {
