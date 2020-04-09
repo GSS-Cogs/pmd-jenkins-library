@@ -202,7 +202,7 @@ def call(body) {
                                                     if (line.contains("a pmd:Dataset")) {
                                                         String datasetUrl = line.split(">")[0].split("<")[1]
                                                         if (!datasetUrl.contains(thisPath)) {
-                                                            throw new Exception("""Aborting. The trig namespace should contain the data url,
+                                                            throw new Exception("""Aborting. The datasetUrl namespace should contain the data url,
                                                                         got: \n\ndataUrl:\n ${thisPath} \n\ndatasetlink:\n ${line}.""")
                                                         }
                                                     }
