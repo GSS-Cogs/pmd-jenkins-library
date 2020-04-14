@@ -6,6 +6,7 @@ import hudson.FilePath
 import org.apache.http.HttpHost
 import org.apache.http.HttpResponse
 import org.apache.http.client.fluent.Executor
+import org.apache.http.client.fluent.Form
 import org.apache.http.client.fluent.Request
 import org.apache.http.entity.ContentType
 import org.apache.http.util.EntityUtils
@@ -326,6 +327,31 @@ class Drafter implements Serializable {
     def getDraftsetEndpoint(String id) {
         String path = "/v1/draftset/${id}/query"
         apiBase.resolve(path)
+    }
+
+    def query(String id, String query, Boolean unionWithLive = false,
+              Integer timeout = null, String accept = "application/sparql-results+json") {
+        URIBuilder uriBuilder = new URIBuilder(getDraftsetEndpoint(id))
+        uriBuilder.setParameter("union-with-live", unionWithLive.toString() )
+        if (timeout != null) {
+            uriBuilder.setParameter("timeout", timeout.toString())
+        }
+        Executor exec = getExec()
+        HttpResponse response = exec.execute(
+                Request.Post(uriBuilder.build())
+                        .addHeader("Accept", accept)
+                        .userAgent(PMDConfig.UA)
+                .bodyForm(Form.form().add("query", query).build())
+        ).returnResponse()
+        if (response.getStatusLine().statusCode == 200) {
+            if (accept == "application/sparql-results+json") {
+                return new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
+            } else {
+                return EntityUtils.toString(response.getEntity())
+            }
+        } else {
+            throw new DrafterException("Problem running query ${errorMsg(response)}")
+        }
     }
 
 }
