@@ -112,7 +112,7 @@ def call(body) {
                                     }
                                 }
                                 for (def dataset : datasets) {
-                                    sh "csv2rdf -t '${dataset.csv}' -u '${dataset.metadata}' -m annotated | rapper -i turtle -o ntriples - http://gss-data.org.uk | split -d -l 100000 --filter='pigz > \$FILE.nt.gz' - ${dataset.output}-"
+                                    sh "csv2rdf -t '${dataset.csv}' -u '${dataset.metadata}' -m annotated | rapper -i turtle -o ntriples - http://gss-data.org.uk | split -d -l 500000 --filter='pigz > \$FILE.nt.gz' - ${dataset.output}-"
                                 }
                             }
                         }
@@ -148,7 +148,9 @@ def call(body) {
                                     def datasets = []
                                     String dspath = util.slugise(env.JOB_NAME)
                                     String datasetGraph = "${pmd.config.base_uri}/graph/${dspath}"
+                                    String metadataGraph = "${pmd.config.base_uri}/graph/${dspath}/metadata"
                                     pmd.drafter.deleteGraph(id, datasetGraph)
+                                    pmd.drafter.deleteGraph(id, metadataGraph)
                                     def outputFiles = findFiles(glob: "${DATASET_DIR}/out/*.nt.gz")
                                     if (outputFiles.length == 0) {
                                         error(message: "No output RDF files found")
@@ -163,6 +165,49 @@ def call(body) {
                                             )
                                         }
                                     }
+                                    if (fileExists("${DATASET_DIR}/out/observations.csv-metadata.trig")) {
+                                        pmd.drafter.addData(
+                                                id,
+                                                "${WORKSPACE}/${DATASET_DIR}/out/observations.csv-metadata.trig",
+                                                "application/trig",
+                                                "UTF-8"
+                                        )
+                                    }
+                                    String codesUsed = pmd.drafter.query(id, """
+PREFIX qb: <http://purl.org/linked-data/cube#>
+PREFIX pmdqb: <http://publishmydata.com/def/qb/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+CONSTRUCT {
+  ?codes_used skos:member ?code
+} WHERE {
+  <http://gss-data.org.uk/data/${dspath}> qb:structure/qb:component ?comp .
+  ?comp qb:dimension ?dim .
+  [] ?dim ?code
+  BIND (IRI(CONCAT(STR(?comp), "/codes-used")) as ?codes_used)
+}""",
+                                            false, null, 'text/turtle')
+                                    codesUsed = codesUsed + pmd.drafter.query(id, """
+PREFIX qb: <http://purl.org/linked-data/cube#>
+PREFIX pmdqb: <http://publishmydata.com/def/qb/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+CONSTRUCT {
+  ?comp pmdqb:codesUsed ?codes_used .
+  ?codes_used a skos:Collection .
+} WHERE {
+  <http://gss-data.org.uk/data/gss_data/trade/hmrc_rts> qb:structure/qb:component ?comp .
+  BIND (IRI(CONCAT(STR(?comp), "/codes-used")) as ?codes_used)
+}""",
+                                            false, null, 'text/turtle')
+                                    writeFile(file: "${DATASET_DIR}/out/codes-used.ttl", text: codesUsed)
+                                    pmd.drafter.addData(
+                                            id,
+                                            "${WORKSPACE}/${DATASET_DIR}/out/codes-used.ttl",
+                                            "text/turtle",
+                                            "UTF-8",
+                                            datasetGraph
+                                    )
                                 } else {
                                     jobDraft.replace()
                                     def datasets = []
