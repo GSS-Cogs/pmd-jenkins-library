@@ -112,7 +112,7 @@ def call(body) {
                                     }
                                 }
                                 for (def dataset : datasets) {
-                                    sh "csv2rdf -t '${dataset.csv}' -u '${dataset.metadata}' -m annotated | rapper -i turtle -o ntriples - http://gss-data.org.uk | split -d -l 500000 --filter='pigz > \$FILE.nt.gz' - ${dataset.output}-"
+                                    sh "csv2rdf -t '${dataset.csv}' -u '${dataset.metadata}' -m annotated | riot --syntax=turtle --stream=ntriples - | split -d -l 500000 --filter='pigz > \$FILE.nt.gz' - ${dataset.output}-"
                                 }
                             }
                         }
