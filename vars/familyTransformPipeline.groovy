@@ -196,7 +196,7 @@ CONSTRUCT {
   ?comp pmdqb:codesUsed ?codes_used .
   ?codes_used a skos:Collection .
 } WHERE {
-  <http://gss-data.org.uk/data/gss_data/trade/hmrc_rts> qb:structure/qb:component ?comp .
+  <http://gss-data.org.uk/data/${dspath}> qb:structure/qb:component ?comp .
   BIND (IRI(CONCAT(STR(?comp), "/codes-used")) as ?codes_used)
 }""",
                                             false, null, 'text/turtle')
