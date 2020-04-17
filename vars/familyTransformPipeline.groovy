@@ -274,8 +274,8 @@ CONSTRUCT {
                                 when {
                                     expression {
                                         def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
-                                        if (info.containsKey('transform') && info['transform'].containsKey('review')) {
-                                            return !info['transform']['review']
+                                        if (info.containsKey('load') && info['load'].containsKey('review')) {
+                                            return info['load']['review']
                                         } else {
                                             return false
                                         }
@@ -294,8 +294,8 @@ CONSTRUCT {
                                 when {
                                     expression {
                                         def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
-                                        if (info.containsKey('transform') && info['transform'].containsKey('review')) {
-                                            return info['transform']['review']
+                                        if (info.containsKey('load') && info['transform'].containsKey('review')) {
+                                            return !info['load']['review']
                                         } else {
                                             return true
                                         }
