@@ -112,7 +112,7 @@ def call(body) {
                                     }
                                 }
                                 for (def dataset : datasets) {
-                                    sh "csv2rdf -t '${dataset.csv}' -u '${dataset.metadata}' -m annotated | riot --syntax=turtle --stream=ntriples - | split -d -l 500000 --filter='pigz > \$FILE.nt.gz' - ${dataset.output}-"
+                                    sh "csv2rdf -t '${dataset.csv}' -u '${dataset.metadata}' -m annotated | riot --syntax=turtle --stream=ntriples - | split -a 4 -d -l 500000 --filter='pigz > \$FILE.nt.gz' - ${dataset.output}-"
                                 }
                             }
                         }
