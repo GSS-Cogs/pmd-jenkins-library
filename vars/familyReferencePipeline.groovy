@@ -30,14 +30,30 @@ def call(body) {
             stage('Upload') {
                 steps {
                     script {
-                        jobDraft.replace()
+                        def pmd = pmdConfig("pmd")
+                        pmd.drafter
+                                .listDraftsets()
+                                .findAll { it['display-name'] == env.JOB_NAME }
+                                .each {
+                                    pmd.drafter.deleteDraftset(it.id)
+                                }
+                        String id = pmd.drafter.createDraftset(env.JOB_NAME).id
                         def codelists = readJSON(file: 'reference/codelists-metadata.json')
                         for (def table : codelists['tables']) {
                             String codelistFilename = table['url']
                             String label = table['rdfs:label']
-                            uploadCodelist("reference/${codelistFilename}", label)
+                            pmd.drafter.deleteGraph(id, "${pmd.config.base_uri}/graph/${util.slugise(label)}")
+                            pmd.pipelines.codelist(id, "${WORKSPACE}/reference/${codelistFilename}", label)
                         }
-                        uploadComponents("reference/components.csv")
+                        pmd.pipelines.components(id, "${WORKSPACE}/reference/components.csv")
+                        if (fileExists('reference/components.ttl')) {
+                            pmd.drafter.addData(
+                                    id,
+                                    "${WORKSPACE}/reference/components.trig",
+                                    "application/trig",
+                                    "UTF-8"
+                            )
+                        }
                     }
                 }
             }
