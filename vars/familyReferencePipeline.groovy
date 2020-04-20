@@ -46,7 +46,12 @@ def call(body) {
                             pmd.pipelines.codelist(id, "${WORKSPACE}/reference/${codelistFilename}", label)
                         }
                         pmd.pipelines.components(id, "${WORKSPACE}/reference/components.csv")
-                        if (fileExists('reference/components.ttl')) {
+                        if (fileExists('reference/components.trig')) {
+                            String trig = readFile('reference/components.trig')
+                            def graphMatch = trig =~ /(?ms)<([^>]+)>\s+\{/
+                            graphMatch.find()
+                            String componentsGraph = graphMatch.group(1)
+                            pmd.drafter.deleteGraph(id, componentsGraph)
                             pmd.drafter.addData(
                                     id,
                                     "${WORKSPACE}/reference/components.trig",
