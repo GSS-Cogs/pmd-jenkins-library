@@ -45,7 +45,9 @@ def call(body) {
                             pmd.drafter.deleteGraph(id, "${pmd.config.base_uri}/graph/${util.slugise(label)}")
                             pmd.pipelines.codelist(id, "${WORKSPACE}/reference/${codelistFilename}", label)
                         }
-                        pmd.pipelines.components(id, "${WORKSPACE}/reference/components.csv")
+                        if (fileExists('reference/components.csv')) {
+                            pmd.pipelines.components(id, "${WORKSPACE}/reference/components.csv")
+                        }
                         if (fileExists('reference/components.trig')) {
                             String trig = readFile('reference/components.trig')
                             def graphMatch = trig =~ /(?ms)<([^>]+)>\s+\{/
