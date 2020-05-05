@@ -28,6 +28,13 @@ def call(body) {
                 }
             }
             stage('Upload') {
+                agent {
+                    docker {
+                        image 'gsscogs/csv2rdf'
+                        reuseNode true
+                        alwaysPull true
+                    }
+                }
                 steps {
                     script {
                         def pmd = pmdConfig("pmd")
@@ -45,7 +52,18 @@ def call(body) {
                             pmd.drafter.deleteGraph(id, "${pmd.config.base_uri}/graph/${util.slugise(label)}")
                             pmd.pipelines.codelist(id, "${WORKSPACE}/reference/${codelistFilename}", label)
                         }
-                        if (fileExists('reference/components.csv')) {
+                        if (fileExists('reference/components.csv-metadata.json')) {
+                            sh "csv2rdf -t 'reference/components.csv' -u 'reference/components.csv-metadata.json' -m annotated -o components.ttl"
+                            String jobGraph = "${pmd.config.base_uri}/graph/${util.slugise(env.JOB_NAME)}"
+                            pmd.drafter.deleteGraph(id, jobGraph)
+                            pmd.drafter.addData(
+                                    id,
+                                    "${WORKSPACE}/components.ttl",
+                                    "text/turtle",
+                                    "UTF-8",
+                                    jobGraph
+                            )
+                        } else if (fileExists('reference/components.csv')) {
                             pmd.pipelines.components(id, "${WORKSPACE}/reference/components.csv")
                         }
                         if (fileExists('reference/components.trig')) {
