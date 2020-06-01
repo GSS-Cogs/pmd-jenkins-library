@@ -266,7 +266,7 @@ CONSTRUCT {
                                 }
                                 withCredentials([usernamePassword(credentialsId: pmd.config.credentials, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                                     for (String dsgraph : dsgraphs) {
-                                        sh "sparql-test-runner -t /usr/local/tests -s '${endpoint}?union-with-live=true&timeout=180' -a '${USER}:${PASS}' -p \"dsgraph=<${dsgraph}>\" -r 'reports/TESTS-${dsgraph.substring(dsgraph.lastIndexOf('/') + 1)}.xml'"
+                                        sh "sparql-test-runner -t /usr/local/tests/qb -s '${endpoint}?union-with-live=true&timeout=180' -a '${USER}:${PASS}' -p \"dsgraph=<${dsgraph}>\" -r 'reports/TESTS-${dsgraph.substring(dsgraph.lastIndexOf('/') + 1)}.xml'"
                                     }
                                 }
                             }
