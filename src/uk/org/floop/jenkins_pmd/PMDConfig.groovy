@@ -1,13 +1,11 @@
 package uk.org.floop.jenkins_pmd
 
 class PMDConfig implements Serializable {
-    static final String UA = "uk.org.floop.jenkins_pmd/0.1"
+    static final String UA = "uk.org.floop.jenkins_pmd/0.2"
     String pmd_api
+    String oauth_token_url
+    String oauth_audience
     String credentials
-    String pipeline_api
     String default_mapping
     String base_uri
-    String empty_cache
-    String sync_search
-    String cache_credentials
 }
