@@ -1,4 +1,3 @@
-import uk.org.floop.jenkins_pmd.Drafter
 import uk.org.floop.jenkins_pmd.PMD
 import uk.org.floop.jenkins_pmd.PMDConfig
 

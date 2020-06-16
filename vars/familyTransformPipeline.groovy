@@ -1,6 +1,3 @@
-import uk.org.floop.jenkins_pmd.DrafterException
-import uk.org.floop.jenkins_pmd.PMD
-
 def call(body) {
     def pipelineParams = [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
@@ -210,7 +207,7 @@ CONSTRUCT {
                                             datasetGraph
                                     )
                                 } else {
-                                    throw(new DrafterException("Drafter pipelines not available"))
+                                    error(message: "Drafter pipelines not available")
                                 }
                             }
                         }
