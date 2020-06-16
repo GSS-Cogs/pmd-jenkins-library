@@ -45,14 +45,6 @@ class Drafter implements Serializable {
         this.apiBase = new URI(pmd.config.pmd_api)
         this.authToken = new URI(pmd.config.oauth_token_url)
         this.host = new HttpHost(apiBase.getHost(), apiBase.getPort(), apiBase.getScheme())
-        this.user = user
-        this.pass = pass
-        if (pmd.config.empty_cache) {
-            URI cacheBase = new URI(pmd.config.empty_cache)
-            this.cacheHost = new HttpHost(cacheBase.getHost(), cacheBase.getPort(), cacheBase.getScheme())
-            this.cacheUser = cacheUser
-            this.cachePass = cachePass
-        }
     }
 
     private Executor getExec() {

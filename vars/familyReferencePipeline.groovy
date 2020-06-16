@@ -50,7 +50,7 @@ def call(body) {
                             String codelistFilename = table['url']
                             String label = table['rdfs:label']
                             pmd.drafter.deleteGraph(id, "${pmd.config.base_uri}/graph/${util.slugise(label)}")
-                            pmd.pipelines.codelist(id, "${WORKSPACE}/reference/${codelistFilename}", label)
+// TODO: csv2rdf codelist                            pmd.pipelines.codelist(id, "${WORKSPACE}/reference/${codelistFilename}", label)
                         }
                         if (fileExists('reference/components.csv-metadata.json')) {
                             sh "csv2rdf -t 'reference/components.csv' -u 'reference/components.csv-metadata.json' -m annotated -o components.ttl"
@@ -63,8 +63,6 @@ def call(body) {
                                     "UTF-8",
                                     jobGraph
                             )
-                        } else if (fileExists('reference/components.csv')) {
-                            pmd.pipelines.components(id, "${WORKSPACE}/reference/components.csv")
                         }
                         if (fileExists('reference/components.trig')) {
                             String trig = readFile('reference/components.trig')
@@ -85,7 +83,9 @@ def call(body) {
             stage('Publish') {
                 steps {
                     script {
-                        jobDraft.publish()
+                        pmd = pmdConfig("pmd")
+                        String draftId = pmd.drafter.findDraftset(env.JOB_NAME).id
+                        pmd.drafter.publishDraftset(draftId)
                     }
                 }
             }

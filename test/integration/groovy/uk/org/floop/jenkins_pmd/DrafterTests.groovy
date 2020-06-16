@@ -4,6 +4,7 @@ import com.cloudbees.plugins.credentials.CredentialsScope
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl
+import com.github.tomakehurst.wiremock.common.ConsoleNotifier
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule
 import com.github.tomakehurst.wiremock.stubbing.Scenario
@@ -33,6 +34,7 @@ class DrafterTests {
             .dynamicPort()
             //.port(8123)
             .usingFilesUnderClasspath("test/resources")
+            .notifier(new ConsoleNotifier(true))
     )
 
     @Rule
@@ -149,7 +151,7 @@ class DrafterTests {
     }
 
     @Test
-    void "uploadTidy"() {
+    void "uploadDataset"() {
         instanceRule.stubFor(post("/v1/draftsets?display-name=project")
                 .withHeader("Accept", equalTo("application/json"))
                 .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
@@ -200,38 +202,36 @@ class DrafterTests {
                 .willReturn(ok()
                     .withBodyFile("finishedJobOk.json")))
         instanceRule.stubFor(get("/columns.csv").willReturn(ok().withBodyFile('columns.csv')))
-        instanceRule.stubFor(post("/v1/pipelines/ons-table2qb.core/data-cube/import")
-                .withHeader('Accept', equalTo('application/json'))
-                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
-/*                .withMultipartRequestBody(
-                    aMultipart()
-                            .withName('observations-csv')
-                            .withHeader('Content-Type', equalTo('text/csv'))
-                            .withBody(equalTo('Dummy,CSV'))) */
-                .willReturn(aResponse().withStatus(202).withBodyFile('cubeImportJob.json')))
         instanceRule.stubFor(get('/v1/status/finished-jobs/4fc9ad42-f964-4f56-a1ab-a00bd622b84c')
                 .withHeader('Accept', equalTo('application/json'))
                 .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
                 .willReturn(ok().withBodyFile('finishedImportJobOk.json')))
 
-        final CpsFlowDefinition flow = new CpsFlowDefinition("""
+        final CpsFlowDefinition flow = new CpsFlowDefinition('''
         node {
             dir('out') {
               writeFile file:'dataset.trig', text:'dummy:data'
-              writeFile file:'observations.csv', text:'Dummy,CSV'
+              writeFile file:'observations.ttl', text:'Dummy turtle'
             }
-            jobDraft.replace()
-            uploadTidy(['out/observations.csv'],
-                       '${wireMockRule.baseUrl()}/columns.csv')
-        }""".stripIndent(), true)
+            def pmd = pmdConfig("pmd")
+            pmd.drafter
+                    .listDraftsets()
+                    .findAll { it['display-name'] == env.JOB_NAME }
+                    .each {
+                        pmd.drafter.deleteDraftset(it.id)
+                    }
+            String id = pmd.drafter.createDraftset(env.JOB_NAME).id
+            pmd.drafter.addData(
+                    id,
+                    "${WORKSPACE}/out/observations.ttl",
+                    "text/turtle",
+                    "UTF-8"
+            )
+        }'''.stripIndent(), true)
         final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
         workflowJob.definition = flow
 
         final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
-        instanceRule.verify(postRequestedFor(urlEqualTo('/v1/pipelines/ons-table2qb.core/data-cube/import'))
-                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
-                .withHeader('Accept', equalTo('application/json')))
-
     }
 
     @Test
@@ -257,18 +257,17 @@ class DrafterTests {
                 .withHeader('Accept', equalTo('application/json'))
                 .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
                 .willReturn(ok().withBodyFile('finishedPublicationJobOk.json')))
-        cacheRule.stubFor(get('/_clear_cache').withBasicAuth('cache', 'cache').willReturn(ok()))
-        cacheRule.stubFor(get('/_sync_search').withBasicAuth('cache', 'cache').willReturn(ok()))
         final CpsFlowDefinition flow = new CpsFlowDefinition('''
         node {
-            jobDraft.publish()
+            pmd = pmdConfig("pmd")
+            String draftId = pmd.drafter.findDraftset(env.JOB_NAME).id
+            pmd.drafter.publishDraftset(draftId)
         }'''.stripIndent(), true)
         final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
         workflowJob.definition = flow
 
         final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
         instanceRule.verify(postRequestedFor(urlEqualTo("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0/publish")))
-        rule.assertLogContains('Publishing job draft', firstResult)
     }
 
     @Test
@@ -291,14 +290,19 @@ class DrafterTests {
                 .withHeader("Content-Type", "application/json")))
         final CpsFlowDefinition flow = new CpsFlowDefinition('''
         node {
-            jobDraft.replace()
+            def pmd = pmdConfig("pmd")
+            pmd.drafter
+                    .listDraftsets()
+                    .findAll { it['display-name'] == env.JOB_NAME }
+                    .each {
+                        pmd.drafter.deleteDraftset(it.id)
+                    }
+            String id = pmd.drafter.createDraftset(env.JOB_NAME).id
         }'''.stripIndent(), true)
         final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
         workflowJob.definition = flow
 
         final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
-        //instanceRule.verify(postRequestedFor(urlEqualTo("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0/publish")))
-        rule.assertLogContains('no job draft to delete', firstResult)
     }
 
     @Test
@@ -380,18 +384,6 @@ class DrafterTests {
                 .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
                 .willReturn(ok()
                 .withBodyFile("finishedJobOk.json")))
-        instanceRule.stubFor(get("/columns.csv").willReturn(ok().withBodyFile('columns.csv')))
-        instanceRule.stubFor(post("/v1/pipelines/ons-table2qb.core/data-cube/import")
-                .inScenario("Write lock")
-                .whenScenarioStateIs(Scenario.STARTED)
-                .withHeader('Accept', equalTo('application/json'))
-                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
-                .willReturn(aResponse().withStatus(503)))
-        instanceRule.stubFor(post("/v1/pipelines/ons-table2qb.core/data-cube/import")
-                .inScenario("Write lock")
-                .withHeader('Accept', equalTo('application/json'))
-                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
-                .willReturn(aResponse().withStatus(202).withBodyFile('cubeImportJob.json')))
         instanceRule.stubFor(get('/v1/status/finished-jobs/4fc9ad42-f964-4f56-a1ab-a00bd622b84c')
                 .withHeader('Accept', equalTo('application/json'))
                 .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
@@ -410,29 +402,38 @@ class DrafterTests {
                 .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
                 .willReturn(ok().withBody('true'))
                 .willSetStateTo('Published'))
-        final CpsFlowDefinition flow = new CpsFlowDefinition("""
+        final CpsFlowDefinition flow = new CpsFlowDefinition('''
         node {
             dir('out') {
               writeFile file:'dataset.trig', text:'dummy:data'
-              writeFile file:'observations.csv', text:'Dummy,CSV'
+              writeFile file:'observations.ttl', text:'Dummy turtle'
             }
-            jobDraft.replace()
-            uploadTidy(['out/observations.csv'],
-                       '${wireMockRule.baseUrl()}/columns.csv')
-        }""".stripIndent(), true)
+            def pmd = pmdConfig("pmd")
+            pmd.drafter
+                    .listDraftsets()
+                    .findAll { it['display-name'] == env.JOB_NAME }
+                    .each {
+                        pmd.drafter.deleteDraftset(it.id)
+                    }
+            String id = pmd.drafter.createDraftset(env.JOB_NAME).id
+            pmd.drafter.addData(
+                    id,
+                    "${WORKSPACE}/out/observations.ttl",
+                    "text/turtle",
+                    "UTF-8"
+            )
+        }'''.stripIndent(), true)
         final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
         workflowJob.definition = flow
 
         final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
-        instanceRule.verify(postRequestedFor(urlEqualTo('/v1/pipelines/ons-table2qb.core/data-cube/import'))
-                .withHeader('Accept', equalTo('application/json')))
     }
 
     @Test
     void "addCompressedData"() {
         instanceRule.stubFor(put("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0/data?graph=some-graph")
                 .withHeader("Accept", equalTo("application/json"))
-                .withBasicAuth("admin", "admin")
+                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
                 .withRequestBody(matching(".*prefix.*<[^ ]+>.*"))
                 .willReturn(aResponse()
                         .withStatus(202)
@@ -440,7 +441,7 @@ class DrafterTests {
                         .withHeader("Content-Type", "application/json")))
         instanceRule.stubFor(get("/v1/status/finished-jobs/2c4111e5-a299-4526-8327-bad5996de400")
                 .withHeader("Accept", equalTo("application/json"))
-                .withBasicAuth("admin", "admin")
+                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
                 .willReturn(ok()
                         .withBodyFile("finishedJobOk.json")))
 

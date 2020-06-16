@@ -1,3 +1,4 @@
+import uk.org.floop.jenkins_pmd.DrafterException
 import uk.org.floop.jenkins_pmd.PMD
 
 def call(body) {
@@ -209,29 +210,7 @@ CONSTRUCT {
                                             datasetGraph
                                     )
                                 } else {
-                                    jobDraft.replace()
-                                    def datasets = []
-                                    String dspath = util.slugise(env.JOB_NAME)
-                                    def outputFiles = findFiles(glob: "${DATASET_DIR}/out/*.csv")
-                                    if (outputFiles.length == 0) {
-                                        error(message: "No output CSV files found")
-                                    } else {
-                                        for (def observations : outputFiles) {
-                                            String thisPath = (outputFiles.length == 1) ? dspath : "${dspath}/${observations.name.take(observations.name.lastIndexOf('.'))}"
-                                            def dataset = [
-                                                    "csv"     : "${DATASET_DIR}/out/${observations.name}",
-                                                    "metadata": "${DATASET_DIR}/out/${observations.name}-metadata.trig",
-                                                    "path"    : thisPath
-                                            ]
-                                            datasets.add(dataset)
-                                        }
-                                    }
-                                    for (def dataset : datasets) {
-                                        uploadTidy([dataset.csv],
-                                                "reference/columns.csv",
-                                                dataset.path,
-                                                dataset.metadata)
-                                    }
+                                    throw(new DrafterException("Drafter pipelines not available"))
                                 }
                             }
                         }
@@ -308,7 +287,9 @@ CONSTRUCT {
                                 steps {
                                     script {
                                         FAILED_STAGE = env.STAGE_NAME
-                                        jobDraft.publish()
+                                        pmd = pmdConfig("pmd")
+                                        String draftId = pmd.drafter.findDraftset(env.JOB_NAME).id
+                                        pmd.drafter.publishDraftset(draftId)
                                     }
                                 }
                             }
