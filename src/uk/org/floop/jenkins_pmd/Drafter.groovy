@@ -324,6 +324,32 @@ class Drafter implements Serializable {
         apiBase.resolve(path)
     }
 
+    def query(String id, String query, Boolean unionWithLive = false,
+              Integer timeout = null, String accept = "application/sparql-results+json") {
+        URIBuilder uriBuilder = new URIBuilder(getDraftsetEndpoint(id))
+        uriBuilder.setParameter("union-with-live", unionWithLive.toString() )
+        if (timeout != null) {
+            uriBuilder.setParameter("timeout", timeout.toString())
+        }
+        Executor exec = getExec()
+        HttpResponse response = exec.execute(
+                Request.Post(uriBuilder.build())
+                        .addHeader("Authorization", "Bearer ${token}")
+                        .addHeader("Accept", accept)
+                        .userAgent(PMDConfig.UA)
+                        .bodyForm(Form.form().add("query", query).build())
+        ).returnResponse()
+        if (response.getStatusLine().statusCode == 200) {
+            if (accept == "application/sparql-results+json") {
+                return new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
+            } else {
+                return EntityUtils.toString(response.getEntity())
+            }
+        } else {
+            throw new DrafterException("Problem running query ${errorMsg(response)}")
+        }
+    }
+
 }
 
 @InheritConstructors
