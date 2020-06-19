@@ -49,11 +49,6 @@ class Drafter implements Serializable {
 
     private Executor getExec() {
         Executor exec = Executor.newInstance()
-        getToken()
-        return exec
-    }
-
-    def getToken() {
         if ((expires == -1) || ((System.currentTimeMillis() / 1000l) > expires)) {
             def js = new JsonSlurper()
             def response = js.parse(
@@ -72,7 +67,12 @@ class Drafter implements Serializable {
             this.token = response['access_token']
             this.expires = System.currentTimeMillis() / 1000L + response['expires_in']
         }
-        return this.token
+        return exec
+    }
+
+    def getToken() {
+        getExec()
+        return this.token;
     }
 
     def listDraftsets(Include include=Include.ALL) {
