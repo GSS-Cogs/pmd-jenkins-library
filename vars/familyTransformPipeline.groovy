@@ -89,12 +89,6 @@ def call(body) {
                                 alwaysPull true
                             }
                         }
-                        when {
-                            expression {
-                                def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
-                                return info.containsKey('transform') && info['transform'].containsKey('to_rdf')
-                            }
-                        }
                         steps {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
