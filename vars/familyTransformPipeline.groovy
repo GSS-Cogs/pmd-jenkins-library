@@ -29,7 +29,7 @@ def call(body) {
                     stage('Tidy CSV') {
                         agent {
                             docker {
-                                image 'gsscogs/databaker'
+                                image 'gsscogs/databaker:1.1'
                                 reuseNode true
                                 alwaysPull true
                             }
