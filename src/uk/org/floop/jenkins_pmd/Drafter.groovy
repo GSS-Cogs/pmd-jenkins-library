@@ -20,7 +20,7 @@ class Drafter implements Serializable {
     private PMD pmd
     private URI apiBase, authToken
     private HttpHost host
-    private String token
+    String token
     private long expires = -1
 
     enum Include {
@@ -68,11 +68,6 @@ class Drafter implements Serializable {
             this.expires = System.currentTimeMillis() / 1000L + response['expires_in']
         }
         return exec
-    }
-
-    def getToken() {
-        getExec()
-        return this.token;
     }
 
     def listDraftsets(Include include=Include.ALL) {
