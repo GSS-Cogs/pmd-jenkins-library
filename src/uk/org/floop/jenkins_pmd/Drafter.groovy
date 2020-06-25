@@ -4,7 +4,9 @@ import groovy.json.JsonSlurper
 import groovy.transform.InheritConstructors
 import hudson.FilePath
 import org.apache.http.Consts
+import org.apache.http.HttpHeaders
 import org.apache.http.HttpHost
+import org.apache.http.HttpRequest
 import org.apache.http.HttpResponse
 import org.apache.http.client.fluent.Executor
 import org.apache.http.client.fluent.Form
@@ -229,20 +231,20 @@ class Drafter implements Serializable {
             if (source.startsWith('http')) {
                 streamSource = Request.Get(source)
                         .userAgent(PMDConfig.UA)
-                        .addHeader("Authorization", "Bearer ${token}")
                         .addHeader('Accept' ,mimeType)
                         .execute().returnContent().asStream()
-            } else if (source.endsWith('.gz')) {
-                streamSource = new GZIPInputStream(new FilePath(new File(source)).read())
             } else {
                 streamSource = new FilePath(new File(source)).read()
             }
-            HttpResponse response = getExec().execute(
-                    Request.Put(apiBase.resolve(path))
-                            .addHeader("Authorization", "Bearer ${token}")
-                            .addHeader("Accept", "application/json")
-                            .userAgent(PMDConfig.UA)
-                            .bodyStream(streamSource, ContentType.create(mimeType, encoding))
+            Request request = Request.Put(apiBase.resolve(path))
+            if (source.endsWith('.gz')) {
+                request = request.addHeader(HttpHeaders.CONTENT_ENCODING, "gzip")
+            }
+            HttpResponse response = getExec().execute(request
+                    .addHeader(HttpHeaders.AUTHORIZATION, "Bearer ${token}")
+                    .addHeader(HttpHeaders.ACCEPT, "application/json")
+                    .userAgent(PMDConfig.UA)
+                    .bodyStream(streamSource, ContentType.create(mimeType, encoding))
             ).returnResponse()
             if (response.getStatusLine().statusCode == 202) {
                 def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))

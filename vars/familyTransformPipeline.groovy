@@ -12,6 +12,7 @@ def call(body) {
         }
         environment {
             DATASET_DIR = "datasets/${JOB_BASE_NAME}"
+            JOB_ID = util.getJobID()
         }
         stages {
             stage('Clean') {

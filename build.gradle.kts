@@ -68,5 +68,6 @@ sharedLibrary {
     dependency("org.jenkins-ci.plugins", "http_request", "1.8.24")
     dependency("org.jenkins-ci.plugins", "pipeline-utility-steps", "2.3.1")
     dependency("org.jenkins-ci.plugins", "credentials-binding", "1.20")
+    dependency("org.jenkins-ci.plugins", "unique-id", "2.2.0")
   }
 }
