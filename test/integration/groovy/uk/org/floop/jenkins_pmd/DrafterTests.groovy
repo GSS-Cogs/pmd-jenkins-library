@@ -471,12 +471,14 @@ class DrafterTests {
     void "jobID"() {
         final CpsFlowDefinition flow = new CpsFlowDefinition('''
         node {
-            echo util.getJobID()
+            echo "Unique id: ${util.getJobID()}"
         }'''.stripIndent(), true)
         final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
         workflowJob.definition = flow
 
         final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
-
+        rule.assertLogContains('Unique id: ', firstResult)
+        rule.assertLogContains('SUCCESS', firstResult)
+        assert rule.getLog(firstResult) =~ /Unique id: [^ ]+/
     }
 }
