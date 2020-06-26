@@ -141,7 +141,7 @@ def call(body) {
                                 String dspath = util.slugise(env.JOB_NAME)
                                 String datasetGraph = "${pmd.config.base_uri}/graph/${dspath}"
                                 String metadataGraph = "${pmd.config.base_uri}/graph/${dspath}/metadata"
-                                def toDelete = [datasetGraph, metadataGraph].addAll(util.jobGraphs)
+                                def toDelete = [datasetGraph, metadataGraph].addAll(util.jobGraphs(pmd, id))
                                 toDelete.each {
                                     pmd.drafter.deleteGraph(id, it)
                                 }
