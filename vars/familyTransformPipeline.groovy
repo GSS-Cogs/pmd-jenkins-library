@@ -105,7 +105,7 @@ def call(body) {
                                     }
                                 }
                                 for (def dataset : datasets) {
-                                    sh "csv2rdf -t '${dataset.csv}' -u '${dataset.metadata}' -m annotated | riot --syntax=turtle --stream=ntriples - | split -a 4 -d -l 500000 --filter='pigz > \$FILE.nt.gz' - ${dataset.output}-"
+                                    sh "csv2rdf -t '${dataset.csv}' -u '${dataset.metadata}' -m annotated | pigz > '${dataset.output}.ttl.gz'"
                                 }
                             }
                         }
@@ -141,9 +141,11 @@ def call(body) {
                                 String dspath = util.slugise(env.JOB_NAME)
                                 String datasetGraph = "${pmd.config.base_uri}/graph/${dspath}"
                                 String metadataGraph = "${pmd.config.base_uri}/graph/${dspath}/metadata"
-                                pmd.drafter.deleteGraph(id, datasetGraph)
-                                pmd.drafter.deleteGraph(id, metadataGraph)
-                                def outputFiles = findFiles(glob: "${DATASET_DIR}/out/*.nt.gz")
+                                def toDelete = [datasetGraph, metadataGraph].addAll(util.jobGraphs)
+                                toDelete.each {
+                                    pmd.drafter.deleteGraph(id, it)
+                                }
+                                def outputFiles = findFiles(glob: "${DATASET_DIR}/out/*.ttl.gz")
                                 if (outputFiles.length == 0) {
                                     error(message: "No output RDF files found")
                                 } else {
@@ -151,18 +153,35 @@ def call(body) {
                                         pmd.drafter.addData(
                                                 id,
                                                 "${WORKSPACE}/${DATASET_DIR}/out/${observations.name}",
-                                                "application/n-triples",
+                                                "application/turtle",
                                                 "UTF-8",
                                                 datasetGraph
                                         )
                                     }
+                                    writeFile(file: "${DATASET_DIR}/out/datasetPROV.ttl", text: util.jobPROV(datasetGraph))
+                                    pmd.drafter.addData(
+                                            id,
+                                            "${WORKSPACE}/${DATASET_DIR}/out/datasetPROV.ttl",
+                                            "text/turtle",
+                                            "UTF-8",
+                                            datasetGraph
+                                    )
                                 }
                                 if (fileExists("${DATASET_DIR}/out/observations.csv-metadata.trig")) {
                                     pmd.drafter.addData(
                                             id,
                                             "${WORKSPACE}/${DATASET_DIR}/out/observations.csv-metadata.trig",
                                             "application/trig",
-                                            "UTF-8"
+                                            "UTF-8",
+                                            metadataGraph
+                                    )
+                                    writeFile(file: "${DATASET_DIR}/out/metadataPROV.ttl", text: util.jobPROV(datasetGraph))
+                                    pmd.drafter.addData(
+                                            id,
+                                            "${WORKSPACE}/${DATASET_DIR}/out/metadataPROV.ttl",
+                                            "text/turtle",
+                                            "UTF-8",
+                                            metadataGraph
                                     )
                                 }
                                 String codesUsed = pmd.drafter.query(id, """

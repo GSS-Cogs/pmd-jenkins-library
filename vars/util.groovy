@@ -15,3 +15,7 @@ String getJobID() {
 List<String> jobGraphs(PMD pmd, String draftId) {
   Job.graphs(currentBuild, pmd, draftId)
 }
+
+String jobPROV(String graph) {
+  Job.getPROV(currentBuild, graph)
+}

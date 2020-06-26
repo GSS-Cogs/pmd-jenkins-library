@@ -16,7 +16,7 @@ class Job {
         return id
     }
 
-    static String getProv(RunWrapper build, String graph) {
+    static String getPROV(RunWrapper build, String graph) {
         String jobId = getID(build)
         String generatedAt = Instant.ofEpochMilli(build.timeInMillis).toString()
         return """
