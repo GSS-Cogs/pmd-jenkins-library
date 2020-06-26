@@ -154,7 +154,7 @@ def call(body) {
                                         pmd.drafter.addData(
                                                 id,
                                                 "${WORKSPACE}/${DATASET_DIR}/out/${observations.name}",
-                                                "application/turtle",
+                                                "text/turtle",
                                                 "UTF-8",
                                                 datasetGraph
                                         )
