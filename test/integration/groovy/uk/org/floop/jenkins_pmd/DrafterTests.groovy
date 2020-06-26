@@ -9,6 +9,12 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import hudson.FilePath
+import org.apache.jena.riot.RDFLanguages
+import org.apache.jena.riot.RDFParser
+import org.apache.jena.riot.lang.StreamRDFCounting
+import org.apache.jena.riot.system.ErrorHandlerFactory
+import org.apache.jena.riot.system.StreamRDFCountingBase
+import org.apache.jena.riot.system.StreamRDFLib
 import org.jenkinsci.lib.configprovider.ConfigProvider
 import org.jenkinsci.plugins.configfiles.ConfigFileStore
 import org.jenkinsci.plugins.configfiles.GlobalConfigFiles
@@ -480,6 +486,55 @@ class DrafterTests {
         rule.assertLogContains('Unique id: ', firstResult)
         rule.assertLogContains('SUCCESS', firstResult)
         assert rule.getLog(firstResult) =~ /Unique id: [^ ]+/
+    }
+
+    @Test
+    void "job PROV"() {
+        instanceRule.stubFor(get(urlMatching("/v1/draftsets.*"))
+                .withHeader("Accept", equalTo("application/json"))
+                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
+                .willReturn(ok()
+                        .withBodyFile("listDraftsetsWithoutProject.json")
+                        .withHeader("Content-Type", "application/json")))
+        instanceRule.stubFor(post("/v1/draftsets?display-name=project")
+                .withHeader("Accept", equalTo("application/json"))
+                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
+                .willReturn(seeOther("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0")))
+        instanceRule.stubFor(get("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0")
+                .withHeader("Accept", equalTo("application/json"))
+                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
+                .willReturn(ok()
+                        .withBodyFile("newDraftset.json")
+                        .withHeader("Content-Type", "application/json")))
+        final CpsFlowDefinition flow = new CpsFlowDefinition('''
+        node {
+            def pmd = pmdConfig("pmd")
+            String id = pmd.drafter.createDraftset(env.JOB_NAME).id
+            writeFile(file: "${WORKSPACE}/out/datasetPROV.ttl", text: util.jobPROV("http://example.com"))
+            pmd.drafter.addData(
+                id,
+                "${WORKSPACE}/out/datasetPROV.ttl",
+                "text/turtle",
+                "UTF-8",
+                "http://bar.com"
+            )
+
+        }'''.stripIndent(), true)
+        final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
+        workflowJob.definition = flow
+
+        final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
+        rule.assertLogContains('SUCCESS', firstResult)
+        FilePath workspace = rule.jenkins.getWorkspaceFor(workflowJob)
+        FilePath provTurtle = workspace.child("out").child("datasetPROV.ttl")
+        def counter = StreamRDFLib.count()
+        RDFParser
+                .create()
+                .source(provTurtle.read())
+                .lang(RDFLanguages.TURTLE)
+                .errorHandler(ErrorHandlerFactory.errorHandlerStrict)
+                .parse(counter)
+        assert counter.count() > 0
     }
 
     @Test

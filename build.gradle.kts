@@ -44,6 +44,7 @@ dependencies {
   integrationTestImplementation("com.github.tomakehurst:wiremock:2.25.1")
   integrationTestImplementation("jakarta.xml.bind:jakarta.xml.bind-api:2.3.2")
   integrationTestImplementation("org.glassfish.jaxb:jaxb-runtime:2.3.2")
+  integrationTestImplementation("org.apache.jena:jena-arq:3.15.0")
 }
 
 jenkinsIntegration {
