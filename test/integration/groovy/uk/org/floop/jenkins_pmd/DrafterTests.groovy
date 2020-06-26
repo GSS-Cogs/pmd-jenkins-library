@@ -481,4 +481,42 @@ class DrafterTests {
         rule.assertLogContains('SUCCESS', firstResult)
         assert rule.getLog(firstResult) =~ /Unique id: [^ ]+/
     }
+
+    @Test
+    void "list graphs associated with this job"() {
+        instanceRule.stubFor(get(urlMatching("/v1/draftsets.*"))
+                .withHeader("Accept", equalTo("application/json"))
+                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
+                .willReturn(ok()
+                        .withBodyFile("listDraftsetsWithoutProject.json")
+                        .withHeader("Content-Type", "application/json")))
+        instanceRule.stubFor(post("/v1/draftsets?display-name=project")
+                .withHeader("Accept", equalTo("application/json"))
+                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
+                .willReturn(seeOther("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0")))
+        instanceRule.stubFor(get("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0")
+                .withHeader("Accept", equalTo("application/json"))
+                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
+                .willReturn(ok()
+                        .withBodyFile("newDraftset.json")
+                        .withHeader("Content-Type", "application/json")))
+        instanceRule.stubFor(post("/v1/draftset/4e376c57-6816-404a-8945-94849299f2a0/query?union-with-live=true")
+                .withHeader("Accept", equalTo("application/sparql-results+json"))
+                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
+                .willReturn(ok()
+                        .withBodyFile("sparql-results-graphs.json")
+                        .withHeader("Content-Type", "application/json")))
+        final CpsFlowDefinition flow = new CpsFlowDefinition('''
+        node {
+            def pmd = pmdConfig("pmd")
+            String id = pmd.drafter.createDraftset(env.JOB_NAME).id
+            echo "Job graphs: ${util.jobGraphs(pmd, id)}"
+        }'''.stripIndent(), true)
+        final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
+        workflowJob.definition = flow
+
+        final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
+        rule.assertLogContains('SUCCESS', firstResult)
+        rule.assertLogContains('http://example.org/data-graph', firstResult)
+    }
 }

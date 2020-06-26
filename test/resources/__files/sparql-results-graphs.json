@@ -1,0 +1,13 @@
+{
+  "head": { "vars": [ "graph" ]
+  } ,
+  "results": {
+    "bindings": [
+      {
+        "graph": { "type": "uri" , "value": "http://example.org/metadata-graph" }
+      }, {
+        "graph": { "type": "uri" , "value": "http://example.org/data-graph" }
+      }
+    ]
+  }
+}
