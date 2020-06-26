@@ -141,9 +141,10 @@ def call(body) {
                                 String dspath = util.slugise(env.JOB_NAME)
                                 String datasetGraph = "${pmd.config.base_uri}/graph/${dspath}"
                                 String metadataGraph = "${pmd.config.base_uri}/graph/${dspath}/metadata"
-                                def toDelete = [datasetGraph, metadataGraph].addAll(util.jobGraphs(pmd, id))
-                                toDelete.each {
-                                    pmd.drafter.deleteGraph(id, it)
+                                def toDelete = [datasetGraph, metadataGraph]
+                                toDelete.addAll(util.jobGraphs(pmd, id))
+                                toDelete.each { graph ->
+                                    pmd.drafter.deleteGraph(id, graph)
                                 }
                                 def outputFiles = findFiles(glob: "${DATASET_DIR}/out/*.ttl.gz")
                                 if (outputFiles.length == 0) {
