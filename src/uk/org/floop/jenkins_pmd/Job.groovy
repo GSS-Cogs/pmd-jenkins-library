@@ -23,13 +23,14 @@ class Job {
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix gdp: <http://gss-data.org.uk/def/gdp#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-<${graph}> prov:wasGeneratedBy ${build.absoluteUrl} .
-${build.absoluteUrl} a prov:Activity ;
-  prov:wasAssociatedWith ${build.rawBuild.parent.absoluteUrl} ;
+<${graph}> prov:wasGeneratedBy <${build.absoluteUrl}> .
+<${build.absoluteUrl}> a prov:Activity ;
+  prov:wasAssociatedWith <${build.rawBuild.parent.absoluteUrl}> ;
   prov:generatedAtTime "${generatedAt}"^^xsd:dateTime ;
   rdfs:label "${build.displayName}" .
-${build.rawBuild.parent.absoluteUrl} a prov:Agent ;
+<${build.rawBuild.parent.absoluteUrl}> a prov:Agent ;
   gdp:uniqueID "${jobId}" ;
   rdfs:label "${build.rawBuild.parent.displayName}" .
 """
