@@ -42,8 +42,8 @@ class Job {
 PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX gdp: <http://gss-data.org.uk/def/gdp#>
 
-SELECT ?g WHERE {
-  ?g prov:wasAssociatedWith [ gdp:uniqueID "${jobId}" ] .
+SELECT ?graph WHERE {
+  ?graph prov:wasAssociatedWith [ gdp:uniqueID "${jobId}" ] .
 }
 """, true)
         return results.results.bindings.collect {
