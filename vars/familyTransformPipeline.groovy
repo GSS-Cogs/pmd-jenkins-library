@@ -1,3 +1,5 @@
+import uk.org.floop.jenkins_pmd.Drafter
+
 def call(body) {
     def pipelineParams = [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
@@ -242,20 +244,13 @@ CONSTRUCT {
                                 String draftId = pmd.drafter.findDraftset(env.JOB_NAME).id
                                 String endpoint = pmd.drafter.getDraftsetEndpoint(draftId)
                                 String dspath = util.slugise(env.JOB_NAME)
-                                def dsgraphs = []
-                                if (fileExists("${DATASET_DIR}/out/observations.csv")) {
-                                    dsgraphs.add("${pmd.config.base_uri}/graph/${dspath}")
-                                } else {
-                                    for (def observations : findFiles(glob: "${DATASET_DIR}/out/*.csv")) {
-                                        String basename = observations.name.take(observations.name.lastIndexOf('.'))
-                                        dsgraphs.add("${pmd.config.base_uri}/graph/${dspath}/${basename}")
-                                    }
-                                }
+                                String datasetGraph = "${pmd.config.base_uri}/graph/${dspath}"
+                                String metadataGraph = "${pmd.config.base_uri}/graph/${dspath}/metadata"
                                 String TOKEN = pmd.drafter.getToken()
                                 wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: TOKEN, var: 'TOKEN']]]) {
                                     for (String dsgraph : dsgraphs) {
-                                        sh "sparql-test-runner -t /usr/local/tests/qb -s '${endpoint}?union-with-live=true&timeout=180' -k '${TOKEN}' -p \"dsgraph=<${dsgraph}>\" -r 'reports/TESTS-${dsgraph.substring(dsgraph.lastIndexOf('/') + 1)}.xml'"
-                                        sh "sparql-test-runner -t /usr/local/tests/pmd/pmd4 -s '${endpoint}?union-with-live=true&timeout=180' -k '${TOKEN}' -p \"dsgraph=<${dsgraph}>\" -r 'reports/TESTS-${dsgraph.substring(dsgraph.lastIndexOf('/') + 1)}.xml'"
+                                        sh "sparql-test-runner -t /usr/local/tests/qb -s '${endpoint}?union-with-live=true&timeout=180' -k '${TOKEN}' -p \"dsgraph=<${datasetGraph}>\" -r 'reports/TESTS-${dspath}-qb.xml'"
+                                        sh "sparql-test-runner -t /usr/local/tests/pmd/pmd4 -s '${endpoint}?union-with-live=true&timeout=180' -k '${TOKEN}' -p \"dsgraph=<${datasetGraph}>\" -p \"mdgraph=<${metadataGraph}>\" -r 'reports/TESTS-${dspath}-pmd.xml'"
                                     }
                                 }
                             }
@@ -279,7 +274,7 @@ CONSTRUCT {
                                         FAILED_STAGE = env.STAGE_NAME
                                         pmd = pmdConfig("pmd")
                                         String draftId = pmd.drafter.findDraftset(env.JOB_NAME).id
-                                        pmd.drafter.submitDraftsetTo(draftId, uk.org.floop.jenkins_pmd.Drafter.Role.EDITOR, null)
+                                        pmd.drafter.submitDraftsetTo(draftId, Drafter.Role.EDITOR, null)
                                     }
                                 }
                             }
