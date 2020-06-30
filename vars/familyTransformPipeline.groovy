@@ -249,7 +249,7 @@ CONSTRUCT {
                                 String TOKEN = pmd.drafter.getToken()
                                 wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: TOKEN, var: 'TOKEN']]]) {
                                     sh "sparql-test-runner -t /usr/local/tests/qb -s '${endpoint}?union-with-live=true&timeout=180' -k '${TOKEN}' -p \"dsgraph=<${datasetGraph}>\" -r 'reports/TESTS-${dspath}-qb.xml'"
-                                    sh "sparql-test-runner -t /usr/local/tests/pmd/pmd4 -s '${endpoint}?union-with-live=true&timeout=180' -k '${TOKEN}' -p \"dsgraph=<${datasetGraph}>\" -p \"mdgraph=<${metadataGraph}>\" -r 'reports/TESTS-${dspath}-pmd.xml'"
+                                    sh "sparql-test-runner -t /usr/local/tests/pmd/pmd4 -s '${endpoint}?union-with-live=true&timeout=180' -k '${TOKEN}' -p \"dsgraph=<${datasetGraph}>,mdgraph=<${metadataGraph}>\" -r 'reports/TESTS-${dspath}-pmd.xml'"
                                 }
                             }
                         }
