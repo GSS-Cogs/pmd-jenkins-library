@@ -29,10 +29,10 @@ class Job {
 <${build.absoluteUrl}> a prov:Activity ;
   prov:wasAssociatedWith <${build.rawBuild.parent.absoluteUrl}> ;
   prov:generatedAtTime "${generatedAt}"^^xsd:dateTime ;
-  rdfs:label "${build.displayName}" .
+  rdfs:label "${build.fullDisplayName}" .
 <${build.rawBuild.parent.absoluteUrl}> a prov:Agent ;
   gdp:uniqueID "${jobId}" ;
-  rdfs:label "${build.rawBuild.parent.displayName}" .
+  rdfs:label "${build.rawBuild.parent.fullDisplayName}" .
 """
     }
 
