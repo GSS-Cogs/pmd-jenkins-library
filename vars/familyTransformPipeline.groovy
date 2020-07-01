@@ -145,7 +145,8 @@ def call(body) {
                                 String metadataGraph = "${pmd.config.base_uri}/graph/${dspath}/metadata"
                                 def toDelete = [datasetGraph, metadataGraph]
                                 toDelete.addAll(util.jobGraphs(pmd, id))
-                                toDelete.each { graph ->
+                                for (graph in toDelete) {
+                                    echo "Removing own graph ${graph}"
                                     pmd.drafter.deleteGraph(id, graph)
                                 }
                                 def outputFiles = findFiles(glob: "${DATASET_DIR}/out/*.ttl.gz")
@@ -153,6 +154,7 @@ def call(body) {
                                     error(message: "No output RDF files found")
                                 } else {
                                     for (def observations : outputFiles) {
+                                        echo "Adding ${observations.name}"
                                         pmd.drafter.addData(
                                                 id,
                                                 "${WORKSPACE}/${DATASET_DIR}/out/${observations.name}",
@@ -171,6 +173,7 @@ def call(body) {
                                     )
                                 }
                                 if (fileExists("${DATASET_DIR}/out/observations.csv-metadata.trig")) {
+                                    echo "Adding metadata."
                                     pmd.drafter.addData(
                                             id,
                                             "${WORKSPACE}/${DATASET_DIR}/out/observations.csv-metadata.trig",
@@ -178,7 +181,7 @@ def call(body) {
                                             "UTF-8",
                                             metadataGraph
                                     )
-                                    writeFile(file: "${DATASET_DIR}/out/metadataPROV.ttl", text: util.jobPROV(datasetGraph))
+                                    writeFile(file: "${DATASET_DIR}/out/metadataPROV.ttl", text: util.jobPROV(metadataGraph))
                                     pmd.drafter.addData(
                                             id,
                                             "${WORKSPACE}/${DATASET_DIR}/out/metadataPROV.ttl",
@@ -187,41 +190,6 @@ def call(body) {
                                             metadataGraph
                                     )
                                 }
-                                String codesUsed = pmd.drafter.query(id, """
-PREFIX qb: <http://purl.org/linked-data/cube#>
-PREFIX pmdqb: <http://publishmydata.com/def/qb/>
-PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-
-CONSTRUCT {
-    ?codes_used skos:member ?code
-} WHERE {
-    <http://gss-data.org.uk/data/${dspath}> qb:structure/qb:component ?comp .
-    ?comp qb:dimension ?dim .
-    [] ?dim ?code
-    BIND (IRI(CONCAT(STR(?comp), "/codes-used")) as ?codes_used)
-}""",
-                                        false, null, 'text/turtle')
-                                codesUsed = codesUsed + pmd.drafter.query(id, """
-PREFIX qb: <http://purl.org/linked-data/cube#>
-PREFIX pmdqb: <http://publishmydata.com/def/qb/>
-PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-
-CONSTRUCT {
-    ?comp pmdqb:codesUsed ?codes_used .
-    ?codes_used a skos:Collection .
-} WHERE {
-    <http://gss-data.org.uk/data/${dspath}> qb:structure/qb:component ?comp .
-    BIND (IRI(CONCAT(STR(?comp), "/codes-used")) as ?codes_used)
-}""",
-                                        false, null, 'text/turtle')
-                                writeFile(file: "${DATASET_DIR}/out/codes-used.ttl", text: codesUsed)
-                                pmd.drafter.addData(
-                                        id,
-                                        "${WORKSPACE}/${DATASET_DIR}/out/codes-used.ttl",
-                                        "text/turtle",
-                                        "UTF-8",
-                                        datasetGraph
-                                )
                             }
                         }
                     }
