@@ -228,10 +228,10 @@ def call(body) {
                                 when {
                                     expression {
                                         def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
-                                        if (info.containsKey('load') && info['load'].containsKey('review')) {
-                                            return info['load']['review']
+                                        if (info.containsKey('load') && info['load'].containsKey('publish')) {
+                                            return !info['load']['publish']
                                         } else {
-                                            return false
+                                            return true
                                         }
                                     }
                                 }
@@ -248,10 +248,10 @@ def call(body) {
                                 when {
                                     expression {
                                         def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
-                                        if (info.containsKey('load') && info['transform'].containsKey('review')) {
-                                            return !info['load']['review']
+                                        if (info.containsKey('load') && info['load'].containsKey('publish')) {
+                                            return info['load']['publish']
                                         } else {
-                                            return true
+                                            return false
                                         }
                                     }
                                 }
