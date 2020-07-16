@@ -101,13 +101,16 @@ def call(body) {
                                         String baseName = csv.name.take(csv.name.lastIndexOf('.'))
                                         datasets.add([
                                                 "csv": "${DATASET_DIR}/out/${csv.name}",
-                                                "metadata": "${DATASET_DIR}/out/${csv.name}-metadata.json",
+                                                "metadata": "${DATASET_DIR}/out/${csv.name}-metadata.trig",
+                                                "csvw": "${DATASET_DIR}/out/${csv.name}-metadata.json",
                                                 "output": "${DATASET_DIR}/out/${baseName}"
                                         ])
                                     }
                                 }
+                                writeFile file: "graphs.sparql", text:  """SELECT ?md ?ds { GRAPH ?md { [] <http://publishmydata.com/pmdcat#graph> ?ds } }"""
                                 for (def dataset : datasets) {
-                                    sh "csv2rdf -t '${dataset.csv}' -u '${dataset.metadata}' -m annotated | pigz > '${dataset.output}.ttl.gz'"
+                                    sh "csv2rdf -t '${dataset.csv}' -u '${dataset.csvw}' -m annotated | pigz > '${dataset.output}.ttl.gz'"
+                                    sh "sparql --data='${dataset.metadata}' --query=graphs.sparql --results=JSON > '${dataset.output}-graphs.json'"
                                 }
                             }
                         }
@@ -132,7 +135,7 @@ def call(body) {
                                 FAILED_STAGE = env.STAGE_NAME
                                 def pmd = pmdConfig("pmd")
                                 pmd.drafter
-                                        .listDraftsets()
+                                        .listDraftsets(Drafter.Include.OWNED)
                                         .findAll { it['display-name'] == env.JOB_NAME }
                                         .each {
                                             pmd.drafter.deleteDraftset(it.id)
@@ -141,11 +144,8 @@ def call(body) {
                                 def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
                                 def datasets = []
                                 String dspath = util.slugise(env.JOB_NAME)
-                                String datasetGraph = "${pmd.config.base_uri}/graph/${dspath}"
-                                String metadataGraph = "${pmd.config.base_uri}/graph/${dspath}-metadata"
-                                def toDelete = [datasetGraph, metadataGraph]
-                                toDelete.addAll(util.jobGraphs(pmd, id))
-                                for (graph in toDelete.unique()) {
+                                String baseDatasetGraph = "${pmd.config.base_uri}/graph/${dspath}"
+                                for (graph in util.jobGraphs(pmd, id).unique()) {
                                     echo "Removing own graph ${graph}"
                                     pmd.drafter.deleteGraph(id, graph)
                                 }
@@ -154,6 +154,10 @@ def call(body) {
                                     error(message: "No output RDF files found")
                                 } else {
                                     for (def observations : outputFiles) {
+                                        String baseName = observations.name.substring(0, observations.name.lastIndexOf('.ttl.gz'))
+                                        def graphs = readJSON(text: readFile(file: "${DATASET_DIR}/out/${baseName}-graphs.json"))
+                                        String datasetGraph = graphs.results.bindings[0].ds.value
+                                        String metadataGraph = graphs.results.bindings[0].md.value
                                         echo "Adding ${observations.name}"
                                         pmd.drafter.addData(
                                                 id,
@@ -162,33 +166,31 @@ def call(body) {
                                                 "UTF-8",
                                                 datasetGraph
                                         )
+                                        writeFile(file: "${DATASET_DIR}/out/${baseName}-ds-prov.ttl", text: util.jobPROV(datasetGraph))
+                                        pmd.drafter.addData(
+                                                id,
+                                                "${WORKSPACE}/${DATASET_DIR}/out/${baseName}-ds-prov.ttl",
+                                                "text/turtle",
+                                                "UTF-8",
+                                                datasetGraph
+                                        )
+                                        echo "Adding metadata."
+                                        pmd.drafter.addData(
+                                                id,
+                                                "${WORKSPACE}/${DATASET_DIR}/out/${baseName}.csv-metadata.trig",
+                                                "application/trig",
+                                                "UTF-8",
+                                                metadataGraph
+                                        )
+                                        writeFile(file: "${DATASET_DIR}/out/${baseName}-md-prov.ttl", text: util.jobPROV(metadataGraph))
+                                        pmd.drafter.addData(
+                                                id,
+                                                "${WORKSPACE}/${DATASET_DIR}/out/${baseName}-md-prov.ttl",
+                                                "text/turtle",
+                                                "UTF-8",
+                                                metadataGraph
+                                        )
                                     }
-                                    writeFile(file: "${DATASET_DIR}/out/datasetPROV.ttl", text: util.jobPROV(datasetGraph))
-                                    pmd.drafter.addData(
-                                            id,
-                                            "${WORKSPACE}/${DATASET_DIR}/out/datasetPROV.ttl",
-                                            "text/turtle",
-                                            "UTF-8",
-                                            datasetGraph
-                                    )
-                                }
-                                if (fileExists("${DATASET_DIR}/out/observations.csv-metadata.trig")) {
-                                    echo "Adding metadata."
-                                    pmd.drafter.addData(
-                                            id,
-                                            "${WORKSPACE}/${DATASET_DIR}/out/observations.csv-metadata.trig",
-                                            "application/trig",
-                                            "UTF-8",
-                                            metadataGraph
-                                    )
-                                    writeFile(file: "${DATASET_DIR}/out/metadataPROV.ttl", text: util.jobPROV(metadataGraph))
-                                    pmd.drafter.addData(
-                                            id,
-                                            "${WORKSPACE}/${DATASET_DIR}/out/metadataPROV.ttl",
-                                            "text/turtle",
-                                            "UTF-8",
-                                            metadataGraph
-                                    )
                                 }
                             }
                         }
@@ -209,7 +211,7 @@ def call(body) {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
                                 pmd = pmdConfig("pmd")
-                                String draftId = pmd.drafter.findDraftset(env.JOB_NAME).id
+                                String draftId = pmd.drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
                                 String endpoint = pmd.drafter.getDraftsetEndpoint(draftId)
                                 String dspath = util.slugise(env.JOB_NAME)
                                 String datasetGraph = "${pmd.config.base_uri}/graph/${dspath}"
@@ -239,7 +241,7 @@ def call(body) {
                                     script {
                                         FAILED_STAGE = env.STAGE_NAME
                                         pmd = pmdConfig("pmd")
-                                        String draftId = pmd.drafter.findDraftset(env.JOB_NAME).id
+                                        String draftId = pmd.drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
                                         pmd.drafter.submitDraftsetTo(draftId, Drafter.Role.EDITOR, null)
                                     }
                                 }

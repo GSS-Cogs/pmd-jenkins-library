@@ -266,8 +266,8 @@ class Drafter implements Serializable {
         throw new DrafterException("Problem adding data, maximum retries reached while waiting for lock.")
     }
 
-    def findDraftset(String displayName) {
-        def drafts = listDraftsets(Include.ALL)
+    def findDraftset(String displayName, Include include=Include.ALL) {
+        def drafts = listDraftsets(include)
         def draftset = drafts.find  { it['display-name'] == displayName }
         if (draftset) {
             draftset
