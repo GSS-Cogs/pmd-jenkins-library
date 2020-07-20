@@ -69,16 +69,12 @@ def call(body) {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
                                 ansiColor('xterm') {
-                                    if (fileExists("${DATASET_DIR}/schema.json")) {
-                                        sh "csvlint --no-verbose -s ${DATASET_DIR}/schema.json"
-                                    } else {
-                                        def schemas = []
-                                        for (def schema : findFiles(glob: "${DATASET_DIR}/out/*-schema.json")) {
-                                            schemas.add("${DATASET_DIR}/out/${schema.name}")
-                                        }
-                                        for (String schema : schemas) {
-                                            sh "csvlint --no-verbose -s '${schema}'"
-                                        }
+                                    def schemas = []
+                                    for (def schema : findFiles(glob: "${DATASET_DIR}/out/*-metadata.json")) {
+                                        schemas.add("${DATASET_DIR}/out/${schema.name}")
+                                    }
+                                    for (String schema : schemas) {
+                                        sh "csvlint --no-verbose -s '${schema}'"
                                     }
                                 }
                             }
@@ -141,10 +137,6 @@ def call(body) {
                                             pmd.drafter.deleteDraftset(it.id)
                                         }
                                 String id = pmd.drafter.createDraftset(env.JOB_NAME).id
-                                def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
-                                def datasets = []
-                                String dspath = util.slugise(env.JOB_NAME)
-                                String baseDatasetGraph = "${pmd.config.base_uri}/graph/${dspath}"
                                 for (graph in util.jobGraphs(pmd, id).unique()) {
                                     echo "Removing own graph ${graph}"
                                     pmd.drafter.deleteGraph(id, graph)
