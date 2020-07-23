@@ -111,6 +111,35 @@ def call(body) {
                             }
                         }
                     }
+                    stage('Local Codelists') {
+                        agent {
+                            docker {
+                                image 'gsscogs/csv2rdf'
+                                reuseNode true
+                                alwaysPull true
+                            }
+                        }
+                        steps {
+                            script {
+                                FAILED_STAGE = env.STAGE_NAME
+                                def codelists = []
+                                for (def metadata : findFiles(glob: "${DATASET_DIR}/codelists/*.csv-metadata.json") +
+                                        findFiles(glob: "${DATASET_DIR}/out/codelists/*.csv-metadata.json")) {
+                                    String baseName = metadata.name.substring(0, metadata.name.lastIndexOf('.csv-metadata.json'))
+                                    String dirName = metadata.path.take(metadata.path.lastIndexOf('/'))
+                                    codelists.add([
+                                            "csv": "${dirName}/${baseName}.csv",
+                                            "csvw": "${dirName}/${baseName}.csv-metadata.json",
+                                            "output": "${DATASET_DIR}/out/codelists/${baseName}"
+                                    ])
+                                }
+                                sh "mkdir -p ${DATASET_DIR}/out/codelists"
+                                for (def codelist : codelists) {
+                                    sh "csv2rdf -t '${codelist.csv}' -u '${codelist.csvw}' -m annotated | pigz > '${codelist.output}.ttl.gz'"
+                                }
+                            }
+                        }
+                    }
                 }
             }
             stage('Load') {
@@ -183,6 +212,26 @@ def call(body) {
                                                 metadataGraph
                                         )
                                     }
+                                }
+                                for (def codelist : findFiles(glob: "${DATASET_DIR}/out/codelists/*.ttl.gz")) {
+                                    String baseName = codelist.name.substring(0, codelist.name.lastIndexOf('.ttl.gz'))
+                                    String codelistGraph = "${pmd.config.base_uri}/graph/${util.slugise(env.JOB_NAME)}/${baseName}"
+                                    echo "Adding local codelist ${baseName}"
+                                    pmd.drafter.addData(
+                                            id,
+                                            "${WORKSPACE}/${DATASET_DIR}/out/codelists/${codelist.name}",
+                                            "text/turtle",
+                                            "UTF-8",
+                                            codelistGraph
+                                    )
+                                    writeFile(file: "${DATASET_DIR}/out/codelists/${baseName}-prov.ttl", text: util.jobPROV(codelistGraph))
+                                    pmd.drafter.addData(
+                                            id,
+                                            "${WORKSPACE}/${DATASET_DIR}/out/codelists/${baseName}-prov.ttl",
+                                            "text/turtle",
+                                            "UTF-8",
+                                            codelistGraph
+                                    )
                                 }
                             }
                         }
@@ -266,7 +315,7 @@ def call(body) {
         post {
             always {
                 script {
-                    archiveArtifacts artifacts: "${DATASET_DIR}/out/*", excludes: "${DATASET_DIR}/out/*.html"
+                    archiveArtifacts artifacts: "${DATASET_DIR}/out/", excludes: "${DATASET_DIR}/out/*.html"
                     junit allowEmptyResults: true, testResults: 'reports/**/*.xml'
                     publishHTML([
                             allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true,
