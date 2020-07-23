@@ -302,7 +302,7 @@ def call(body) {
                                     script {
                                         FAILED_STAGE = env.STAGE_NAME
                                         pmd = pmdConfig("pmd")
-                                        String draftId = pmd.drafter.findDraftset(env.JOB_NAME).id
+                                        String draftId = pmd.drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
                                         pmd.drafter.publishDraftset(draftId)
                                     }
                                 }
