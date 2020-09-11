@@ -42,7 +42,7 @@ def call(body) {
                                     if (fileExists("${DATASET_DIR}/main.py")) {
                                         sh "jupytext --to notebook ${DATASET_DIR}/*.py"
                                     }
-                                    sh "jupyter-nbconvert --output-dir=${DATASET_DIR}/out --ExecutePreprocessor.timeout=None --execute '${DATASET_DIR}/main.ipynb'"
+                                    sh "jupyter-nbconvert --to html --output-dir=${DATASET_DIR}/out --ExecutePreprocessor.timeout=None --execute '${DATASET_DIR}/main.ipynb'"
                                 }
                             }
                         }
@@ -255,12 +255,12 @@ def call(body) {
                                 String draftId = pmd.drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
                                 String endpoint = pmd.drafter.getDraftsetEndpoint(draftId)
                                 String dspath = util.slugise(env.JOB_NAME)
-                                String datasetGraph = "${pmd.config.base_uri}/graph/${dspath}"
-                                String metadataGraph = "${pmd.config.base_uri}/graph/${dspath}-metadata"
+                                def fromGraphs = util.jobGraphs(pmd, draftId) + util.referencedGraphs(pmd, draftId)
+                                String fromArgs = fromGraphs.unique().collect { '-f ' + it }.join(' ')
                                 String TOKEN = pmd.drafter.getToken()
                                 wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: TOKEN, var: 'TOKEN']]]) {
-                                    sh "sparql-test-runner -i -t /usr/local/tests/qb -s '${endpoint}?union-with-live=true&timeout=180' -k '${TOKEN}' -p \"dsgraph=<${datasetGraph}>\" -r 'reports/TESTS-${dspath}-qb.xml'"
-                                    sh "sparql-test-runner -i -t /usr/local/tests/pmd/pmd4 -s '${endpoint}?union-with-live=true&timeout=180' -k '${TOKEN}' -p \"dsgraph=<${datasetGraph}>,mdgraph=<${metadataGraph}>\" -r 'reports/TESTS-${dspath}-pmd.xml'"
+                                    sh "sparql-test-runner -i -t /usr/local/tests/qb -s '${endpoint}?timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-qb.xml'"
+                                    sh "sparql-test-runner -i -t /usr/local/tests/pmd/pmd4 -s '${endpoint}?timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-pmd.xml'"
                                 }
                             }
                         }

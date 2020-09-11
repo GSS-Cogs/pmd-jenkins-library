@@ -19,3 +19,7 @@ List<String> jobGraphs(PMD pmd, String draftId) {
 String jobPROV(String graph) {
   Job.getPROV(currentBuild, graph)
 }
+
+List<String> referencedGraphs(PMD pmd, String draftId) {
+  Job.referencedGraphs(currentBuild, pmd, draftId)
+}

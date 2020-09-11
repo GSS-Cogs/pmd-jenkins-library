@@ -50,4 +50,32 @@ SELECT DISTINCT ?graph WHERE {
                 it.graph.value
         }
     }
+
+    static List<String> referencedGraphs(RunWrapper build, PMD pmd, String draftId) {
+        String jobId = getID(build)
+        List<String> jobGraphs = graphs(build, pmd, draftId).unique()
+        def datasets = pmd.drafter.query(draftId, """
+PREFIX qb: <http://purl.org/linked-data/cube#>
+SELECT DISTINCT ?ds WHERE {
+    ?ds a qb:DataSet .
+}""", false).results.bindings.collect { it.ds.value }
+        String dsValues = datasets.collect { "( <" + it + "> )" }.join(', ')
+        return pmd.drafter.query(draftId, """
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX qb: <http://purl.org/linked-data/cube#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+SELECT DISTINCT ?graph WHERE {
+  {
+    ?ds qb:structure/qb:component/qb:componentProperty ?prop .
+    GRAPH ?graph { ?prop rdfs:label ?l }
+  } UNION {
+    ?ds qb:structure/qb:component/qb:componentProperty/qb:codeList ?cs .
+    GRAPH ?graph { ?cs a skos:ConceptScheme }
+  }
+}
+VALUES ( ?ds ) {
+  ${dsValues}
+}""", true).results.bindings.collect { it.graph.value }
+    }
+
 }
