@@ -259,8 +259,8 @@ def call(body) {
                                 String fromArgs = fromGraphs.unique().collect { '-f ' + it }.join(' ')
                                 String TOKEN = pmd.drafter.getToken()
                                 wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: TOKEN, var: 'TOKEN']]]) {
-                                    sh "sparql-test-runner -i -t /usr/local/tests/qb -s '${endpoint}?timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-qb.xml'"
-                                    sh "sparql-test-runner -i -t /usr/local/tests/pmd/pmd4 -s '${endpoint}?timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-pmd.xml'"
+                                    sh "sparql-test-runner -i -t /usr/local/tests/qb -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-qb.xml'"
+                                    sh "sparql-test-runner -i -t /usr/local/tests/pmd/pmd4 -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-pmd.xml'"
                                 }
                             }
                         }
