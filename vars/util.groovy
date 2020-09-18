@@ -1,3 +1,4 @@
+import uk.org.floop.jenkins_pmd.ConceptScheme
 import uk.org.floop.jenkins_pmd.Job
 import uk.org.floop.jenkins_pmd.PMD
 
@@ -22,4 +23,9 @@ String jobPROV(String graph) {
 
 List<String> referencedGraphs(PMD pmd, String draftId) {
   Job.referencedGraphs(currentBuild, pmd, draftId)
+}
+
+String conceptSchemeMetadata(String csvFile, String baseURI, String id, String label) {
+  def cs = new ConceptScheme(csvFile: csvFile, baseURI: baseURI, id: id, label: label)
+  cs.metadata()
 }
