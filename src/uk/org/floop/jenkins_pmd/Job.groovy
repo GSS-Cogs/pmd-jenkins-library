@@ -59,7 +59,7 @@ PREFIX qb: <http://purl.org/linked-data/cube#>
 SELECT DISTINCT ?ds WHERE {
     ?ds a qb:DataSet .
 }""", false).results.bindings.collect { it.ds.value }
-        String dsValues = datasets.collect { "( <" + it + "> )" }.join(', ')
+        String dsValues = datasets.collect { "( <" + it + "> )" }.join(' ')
         return pmd.drafter.query(draftId, """
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX qb: <http://purl.org/linked-data/cube#>
