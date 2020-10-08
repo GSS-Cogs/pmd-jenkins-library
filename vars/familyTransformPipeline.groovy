@@ -92,9 +92,14 @@ def call(body) {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
                                 def datasets = []
-                                for (def csv : findFiles(glob: "${DATASET_DIR}/out/*.csv")) {
+
+                                // Match all files that end .csv or .csv.gz
+                                def csvList = findFiles(glob: "${DATASET_DIR}/*.csv")
+                                def csvGzList = findFiles(glob: "${DATASET_DIR}/*.csv.gz")
+
+                                for (def csv: csvList + csvGzList) {
                                     if (fileExists("${DATASET_DIR}/out/${csv.name}-metadata.json")) {
-                                        String baseName = csv.name.take(csv.name.lastIndexOf('.'))
+                                        String baseName = csv.name.take(csv.name.lastIndexOf('.csv'))
                                         datasets.add([
                                                 "csv": "${DATASET_DIR}/out/${csv.name}",
                                                 "metadata": "${DATASET_DIR}/out/${csv.name}-metadata.trig",
