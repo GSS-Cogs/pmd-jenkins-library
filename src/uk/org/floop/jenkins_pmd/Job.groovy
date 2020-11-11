@@ -41,6 +41,12 @@ class Job {
   rdfs:label "${build.rawBuild.parent.fullDisplayName}" .
 
 ${getInfoJsonProvidenceSparql(build)}
+
+                    <${build.absoluteUrl}> prov:wasInfluencedBy [
+                        a prov:Entity;
+                        rdfs:label "${it.first}"@en;
+                        foaf:page <${it.second}>
+                      ].
 """
     }
 
