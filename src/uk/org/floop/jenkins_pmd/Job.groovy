@@ -41,12 +41,6 @@ class Job {
   rdfs:label "${build.rawBuild.parent.fullDisplayName}" .
 
 ${getInfoJsonProvidenceSparql(build)}
-
-                    <${build.absoluteUrl}> prov:wasInfluencedBy [
-                        a prov:Entity;
-                        rdfs:label "${it.first}"@en;
-                        foaf:page <${it.second}>
-                      ].
 """
     }
 
@@ -54,11 +48,10 @@ ${getInfoJsonProvidenceSparql(build)}
         return getMaybeInfoJsonLabelAndUrl(build)
                 .map({
                     """
-                    <${build.absoluteUrl}> prov:wasInfluencedBy [
-                        a prov:Entity;
+                    <${build.absoluteUrl}> prov:wasInfluencedBy <${it.second}>.
+                    <${it.second}> a prov:Entity;
                         rdfs:label "${it.first}"@en;
-                        foaf:page <${it.second}>
-                      ].
+                        foaf:page <${it.second}>.
                 """
                 })
                 .orElse("")
