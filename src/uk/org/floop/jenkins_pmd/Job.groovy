@@ -1,5 +1,6 @@
 package uk.org.floop.jenkins_pmd
 
+import hudson.tasks.BuildWrapper
 import org.jenkinsci.plugins.uniqueid.IdStore
 import org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper
 
@@ -27,7 +28,6 @@ class Job {
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix gdp: <http://gss-data.org.uk/def/gdp#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 
 <${graph}> prov:wasGeneratedBy <${build.absoluteUrl}> .
 
@@ -45,16 +45,15 @@ ${getInfoJsonProvidenceSparql(build)}
     }
 
     private static String getInfoJsonProvidenceSparql(RunWrapper build) {
-        return getMaybeInfoJsonLabelAndUrl(build)
-                .map({
-                    """
-                    <${build.absoluteUrl}> prov:wasInfluencedBy <${it.second}>.
-                    <${it.second}> a prov:Entity;
-                        rdfs:label "${it.first}"@en;
-                        foaf:page <${it.second}>.
-                """
-                })
-                .orElse("")
+        def (label, url) = getMaybeInfoJsonLabelAndUrl()
+        if (label == null || url == null)
+            return ""
+
+        return """
+                <${build.absoluteUrl}> prov:wasInfluencedBy <${url}>.
+                <${url}> a prov:Entity;
+                    rdfs:label "${label}"@en.
+            """
     }
 
     /**
@@ -63,34 +62,34 @@ ${getInfoJsonProvidenceSparql(build)}
      * @param build
      * @return an optional tuple containing (label, url)
      */
-    private static Optional<Tuple2<String, String>> getMaybeInfoJsonLabelAndUrl(RunWrapper build) {
-        def buildVariables = build.getBuildVariables()
+    private static String[] getMaybeInfoJsonLabelAndUrl() {
+        def environmentVariables = System.getenv()
         // See https://ci.floop.org.uk/env-vars.html/ for full list of available environmental variables.
-        String gitCommitHash = buildVariables["GIT_COMMIT"]
-        String gitRemoteUrl = buildVariables["GIT_URL"]
-                .split(",") // May be multiple listed push/pull remotes
-                .first()
-        String datasetDir = buildVariables["DATASET_DIR"]
+        String gitCommitHash = environmentVariables["GIT_COMMIT"]
+        println("GitCommitHash: ${gitCommitHash}")
+        String gitRemoteUrl = environmentVariables["GIT_URL"]
+        println("GitRemoteUrl: ${gitRemoteUrl}")
+        String datasetDir = environmentVariables["DATASET_DIR"]
+        println("DataSetDir: ${datasetDir}")
 
         // Expecting a gitRemoteUrl of the form:
         // "git@github.com:GSS-Cogs/pmd-jenkins-library.git"
         // OR "https://github.com/GSS-Cogs/family-covid-19"
-        def regex = new Pattern("^.*?GSS-Cogs/(.?)(.git)?\$")
+        def regex = Pattern.compile("^.*?GSS-Cogs/(.+?)(.git)?\$")
         def matches = regex.matcher(gitRemoteUrl)
 
         if (!matches.matches()) {
-            error "Could not comprehend git remote URL '${gitRemoteUrl}'."
-            return Optional.empty()
+            println("ERROR: Could not comprehend git remote URL '${gitRemoteUrl}'.".toString())
+            return [null, null]
         }
 
-        String repoName = matches.group(1);
+        String repoName = matches.group(1)
         String repoBaseUrl = "https://github.com/GSS-Cogs/${repoName}"
         String infoJsonAtCommitUrl = "${repoBaseUrl}/tree/${gitCommitHash}/${datasetDir}/info.json"
         String infoJsonCommitLabel = "info.json inside ${repoName}/${datasetDir}"
 
-        return Optional.of(
-                new Tuple2<String, String>(infoJsonCommitLabel, infoJsonAtCommitUrl)
-        )
+        println("InfoJsonCommitUrl: ${infoJsonAtCommitUrl}")
+        return [infoJsonCommitLabel, infoJsonAtCommitUrl]
     }
 
     static List<String> graphs(RunWrapper build, PMD pmd, String draftId) {
