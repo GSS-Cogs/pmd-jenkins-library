@@ -4,7 +4,7 @@ import java.util.regex.Pattern
 
 class JobHelpers {
     /**
-     * Returns an optional tuple containing (label, url) describing the info.json used in this build.
+     * Returns (label, url) describing the info.json used in this build.
      * Used to describe the providence of data.
      * @param gitRemoteUrl
      * @param gitCommitHash

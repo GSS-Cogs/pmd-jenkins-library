@@ -1,18 +1,16 @@
 package uk.org.floop.jenkins_pmd
 
-import hudson.tasks.BuildWrapper
+
 import org.jenkinsci.plugins.uniqueid.IdStore
 import org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper
 import uk.org.floop.jenkins_pmd.helpers.JobHelpers
 
 import java.time.Instant
-import java.util.regex.Pattern
 
 class Job {
     static String getID(RunWrapper build) {
         def job = build.rawBuild.parent
         String id = IdStore.getId(job)
-//        build.getBuildVariables().get("RepositoryName")
         if (id == null) {
             IdStore.makeId(job)
             id = IdStore.getId(job)
