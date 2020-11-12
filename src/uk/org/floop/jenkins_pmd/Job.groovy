@@ -3,6 +3,7 @@ package uk.org.floop.jenkins_pmd
 import hudson.tasks.BuildWrapper
 import org.jenkinsci.plugins.uniqueid.IdStore
 import org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper
+import uk.org.floop.jenkins_pmd.helpers.JobHelpers
 
 import java.time.Instant
 import java.util.regex.Pattern
@@ -45,24 +46,6 @@ ${getInfoJsonProvidenceSparql(build)}
     }
 
     private static String getInfoJsonProvidenceSparql(RunWrapper build) {
-        def (label, url) = getMaybeInfoJsonLabelAndUrl()
-        if (label == null || url == null)
-            return ""
-
-        return """
-                <${build.absoluteUrl}> prov:wasInfluencedBy <${url}>.
-                <${url}> a prov:Entity;
-                    rdfs:label "${label}"@en.
-            """
-    }
-
-    /**
-     * Returns an optional tuple containing (label, url) describing the info.json used in this build.
-     * Used to describe the providence of data.
-     * @param build
-     * @return an optional tuple containing (label, url)
-     */
-    private static String[] getMaybeInfoJsonLabelAndUrl() {
         def environmentVariables = System.getenv()
         // See https://ci.floop.org.uk/env-vars.html/ for full list of available environmental variables.
         String gitCommitHash = environmentVariables["GIT_COMMIT"]
@@ -72,24 +55,15 @@ ${getInfoJsonProvidenceSparql(build)}
         String datasetDir = environmentVariables["DATASET_DIR"]
         println("DataSetDir: ${datasetDir}")
 
-        // Expecting a gitRemoteUrl of the form:
-        // "git@github.com:GSS-Cogs/pmd-jenkins-library.git"
-        // OR "https://github.com/GSS-Cogs/family-covid-19"
-        def regex = Pattern.compile("^.*?GSS-Cogs/(.+?)(.git)?\$")
-        def matches = regex.matcher(gitRemoteUrl)
+        def (label, url) = JobHelpers.getMaybeInfoJsonLabelAndUrl(gitRemoteUrl, gitCommitHash, datasetDir)
+        if (label == null || url == null)
+            return ""
 
-        if (!matches.matches()) {
-            println("ERROR: Could not comprehend git remote URL '${gitRemoteUrl}'.".toString())
-            return [null, null]
-        }
-
-        String repoName = matches.group(1)
-        String repoBaseUrl = "https://github.com/GSS-Cogs/${repoName}"
-        String infoJsonAtCommitUrl = "${repoBaseUrl}/tree/${gitCommitHash}/${datasetDir}/info.json"
-        String infoJsonCommitLabel = "info.json inside ${repoName}/${datasetDir}"
-
-        println("InfoJsonCommitUrl: ${infoJsonAtCommitUrl}")
-        return [infoJsonCommitLabel, infoJsonAtCommitUrl]
+        return """
+                <${build.absoluteUrl}> prov:wasInfluencedBy <${url}>.
+                <${url}> a prov:Entity;
+                    rdfs:label "${label}"@en.
+            """
     }
 
     static List<String> graphs(RunWrapper build, PMD pmd, String draftId) {

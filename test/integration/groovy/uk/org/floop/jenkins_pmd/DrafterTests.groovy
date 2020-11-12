@@ -9,12 +9,9 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import hudson.FilePath
-import jenkins.model.Jenkins
 import org.apache.jena.riot.RDFLanguages
 import org.apache.jena.riot.RDFParser
-import org.apache.jena.riot.lang.StreamRDFCounting
 import org.apache.jena.riot.system.ErrorHandlerFactory
-import org.apache.jena.riot.system.StreamRDFCountingBase
 import org.apache.jena.riot.system.StreamRDFLib
 import org.jenkinsci.lib.configprovider.ConfigProvider
 import org.jenkinsci.plugins.configfiles.ConfigFileStore
@@ -79,11 +76,6 @@ class DrafterTests {
   "default_mapping": "https://github.com/ONS-OpenData/ref_trade/raw/master/columns.csv",
   "base_uri": "http://gss-data.org.uk"
 }""", configProvider.getProviderId()))
-
-    }
-
-    @Before
-    void setupEnvVariables() {
 
     }
 
