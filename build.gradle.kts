@@ -1,4 +1,3 @@
-import com.gradle.scan.plugin.BuildScanPlugin
 import com.mkobit.jenkins.pipelines.http.AnonymousAuthentication
 import org.gradle.kotlin.dsl.version
 import java.io.ByteArrayOutputStream
@@ -26,9 +25,17 @@ buildScan {
   value("Revision", commitSha)
 }
 
+
 tasks {
   wrapper {
     gradleVersion = "5.5.1"
+  }
+
+  integrationTest {
+    doFirst{
+      environment("GIT_URL", "https://github.com/GSS-Cogs/family-covid-19.git")
+      environment("GIT_COMMIT", "15632b3a9ff2d05cfb82d05323d565ef1e98e108")
+    }
   }
 }
 
@@ -72,3 +79,4 @@ sharedLibrary {
     dependency("org.jenkins-ci.plugins", "unique-id", "2.2.0")
   }
 }
+

@@ -1,7 +1,9 @@
 package uk.org.floop.jenkins_pmd
 
+
 import org.jenkinsci.plugins.uniqueid.IdStore
 import org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper
+import uk.org.floop.jenkins_pmd.helpers.JobHelpers
 
 import java.time.Instant
 
@@ -19,6 +21,7 @@ class Job {
     static String getPROV(RunWrapper build, String graph) {
         String jobId = getID(build)
         String generatedAt = Instant.ofEpochMilli(build.timeInMillis).toString()
+
         return """
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -26,14 +29,39 @@ class Job {
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 <${graph}> prov:wasGeneratedBy <${build.absoluteUrl}> .
+
 <${build.absoluteUrl}> a prov:Activity ;
   prov:wasAssociatedWith <${build.rawBuild.parent.absoluteUrl}> ;
   prov:generatedAtTime "${generatedAt}"^^xsd:dateTime ;
-  rdfs:label "${build.fullDisplayName}" .
+  rdfs:label "${build.fullDisplayName}".
+
 <${build.rawBuild.parent.absoluteUrl}> a prov:Agent ;
   gdp:uniqueID "${jobId}" ;
   rdfs:label "${build.rawBuild.parent.fullDisplayName}" .
+
+${getInfoJsonProvidenceSparql(build)}
 """
+    }
+
+    private static String getInfoJsonProvidenceSparql(RunWrapper build) {
+        def environmentVariables = System.getenv()
+        // See https://ci.floop.org.uk/env-vars.html/ for full list of available environmental variables.
+        String gitCommitHash = environmentVariables["GIT_COMMIT"]
+        println("GitCommitHash: ${gitCommitHash}")
+        String gitRemoteUrl = environmentVariables["GIT_URL"]
+        println("GitRemoteUrl: ${gitRemoteUrl}")
+        String datasetDir = environmentVariables["DATASET_DIR"]
+        println("DataSetDir: ${datasetDir}")
+
+        def (label, url) = JobHelpers.getMaybeInfoJsonLabelAndUrl(gitRemoteUrl, gitCommitHash, datasetDir)
+        if (label == null || url == null)
+            return ""
+
+        return """
+                <${build.absoluteUrl}> prov:wasInfluencedBy <${url}>.
+                <${url}> a prov:Entity;
+                    rdfs:label "${label}"@en.
+            """
     }
 
     static List<String> graphs(RunWrapper build, PMD pmd, String draftId) {
