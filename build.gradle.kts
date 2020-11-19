@@ -58,17 +58,20 @@ sharedLibrary {
   coreVersion.set(jenkinsIntegration.downloadDirectory.file("core-version.txt").map { it.asFile.readText().trim() })
   // TODO: retrieve downloaded plugin resource
   pluginDependencies {
-    dependency("org.jenkins-ci.plugins", "pipeline-build-step", "2.12")
-    dependency("org.6wind.jenkins", "lockable-resources", "2.8")
-    val declarativePluginsVersion = "1.7.0"
+    dependency("org.jenkins-ci.plugins", "pipeline-build-step", "2.13")
+    dependency("org.6wind.jenkins", "lockable-resources", "2.10")
+    val declarativePluginsVersion = "1.7.2"
     dependency("org.jenkinsci.plugins", "pipeline-model-api", declarativePluginsVersion)
     dependency("org.jenkinsci.plugins", "pipeline-model-declarative-agent", "1.1.1")
     dependency("org.jenkinsci.plugins", "pipeline-model-definition", declarativePluginsVersion)
     dependency("org.jenkinsci.plugins", "pipeline-model-extensions", declarativePluginsVersion)
-    dependency("org.jenkins-ci.plugins", "config-file-provider", "3.6.3")
-    dependency("org.jenkins-ci.plugins", "http_request", "1.8.26")
+    dependency("org.jenkins-ci.plugins", "config-file-provider", "3.7.0")
+    dependency("org.jenkins-ci.plugins", "http_request", "1.8.27")
     dependency("org.jenkins-ci.plugins", "pipeline-utility-steps", "2.6.1")
-    dependency("org.jenkins-ci.plugins", "credentials-binding", "1.23")
+    dependency("org.jenkins-ci.plugins", "credentials-binding", "1.24")
     dependency("org.jenkins-ci.plugins", "unique-id", "2.2.0")
+    dependency("org.jenkins-ci.plugins", "docker-workflow", "1.24")
+    dependency("org.jenkins-ci.plugins", "htmlpublisher", "1.23")
+    dependency("org.jenkins-ci.plugins", "durable-task", "1.35")
   }
 }
