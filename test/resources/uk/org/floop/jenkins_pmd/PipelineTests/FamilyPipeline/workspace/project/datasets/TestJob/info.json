@@ -1,0 +1,74 @@
+{
+  "title": "Weekly deaths, [Year] (NI)",
+  "publisher": "Northern Ireland Statistics and Research Agency",
+  "description": "NISRA weekly provisional death statistics, which are based on death registration information collected by the General Register Office, count all deaths where COVID-19 was mentioned on the death certificate by the doctor who certified the death, whether or not COVID-19 was the primary underlying cause of death.",
+  "datasetNotes": [
+    "On landing page scroll down to dataset which is located under heading \"Documents\" titled \"Weekly Deaths, 2020\"."
+  ],
+  "published": "2020-05-01",
+  "families": [
+    "COVID-19"
+  ],
+  "extract": {
+    "source": "XLS",
+    "stage": "Documented"
+  },
+  "transform": {
+    "airtable": "recz2ijoq9hGcYMhT",
+    "main_issue": 15,
+    "stage": [
+      "To Do",
+      "Priority"
+    ],
+    "columns": {
+      "Period": {
+        "dimension": "http://purl.org/linked-data/sdmx/2009/dimension#refPeriod",
+        "value": "http://reference.data.gov.uk/id/{+period}"
+      },
+      "Sex": {
+        "dimension": "http://purl.org/linked-data/sdmx/2009/dimension#sex",
+        "value": "http://purl.org/linked-data/sdmx/2009/code#sex-{sex}"
+      },
+      "Area": {
+        "parent": "http://purl.org/linked-data/sdmx/2009/dimension#refArea",
+        "value": "http://statistics.data.gov.uk/id/statistical-geography/{area}"
+      },
+      "Age": {
+        "parent": "http://purl.org/linked-data/sdmx/2009/dimension#age",
+        "value": "http://gss-data.org.uk/data/gss_data/covid-19/nisra-weekly-deaths-year-ni#concept/age/{age}",
+        "description": "NISRA Age Brackets"
+      },
+      "Death Measurement Type": {
+        "parent": "http://gss-data.org.uk/data/gss_data/covid-19/dimension#registered-death-type",
+        "value": "http://gss-data.org.uk/data/gss_data/covid-19/nisra-weekly-deaths-year-ni#concept/registered-death-type/{registered_death_type}"
+      },
+      "Place of Death": {
+        "parent": "http://gss-data.org.uk/data/gss_data/covid-19/dimension#location-of-death",
+        "value": "http://gss-data.org.uk/data/gss_data/covid-19/nisra-weekly-deaths-year-ni#concept/location-of-death/{location_of_death}",
+        "description": "NISRA locations of death"
+      },
+      "Cause of Death": {
+        "parent": "http://gss-data.org.uk/data/gss_data/covid-19/dimension#cause-of-death",
+        "value": "http://gss-data.org.uk/data/gss_data/covid-19/nisra-weekly-deaths-year-ni#concept/cause-of-death/{cause_of_death}",
+        "description": "NISRA causes of death"
+      },
+      "Residential Setting": {
+        "parent": "http://gss-data.org.uk/data/gss_data/covid-19/dimension#residential-setting",
+        "value": "http://gss-data.org.uk/data/gss_data/covid-19/nisra-weekly-deaths-year-ni#concept/residential-setting/{residential_setting}",
+        "description": "NISRA causes of death"
+      },
+      "Marker": {
+        "attribute": "http://purl.org/linked-data/sdmx/2009/attribute#obsStatus",
+        "value": "http://gss-data.org.uk/def/concept/marker/{marker}"
+      },
+      "Value": {
+        "unit": "http://gss-data.org.uk/def/concept/measurement-units/deaths",
+        "measure": "http://gss-data.org.uk/def/measure/count",
+        "datatype": "decimal"
+      }
+    }
+  },
+  "sizingNotes": "Simple table structure with multiple dimensions and some footnotes.",
+  "notes": "Data viz\n\nThe Northern Ireland weekly deaths statistics have been extended to include information relating to respiratory and COVID-19 related deaths.",
+  "landingPage": "https://www.nisra.gov.uk/publications/weekly-deaths"
+}

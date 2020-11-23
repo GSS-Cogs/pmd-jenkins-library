@@ -11,6 +11,15 @@ plugins {
     id("org.jenkins-ci.jpi") version "0.38.0" apply false
 }
 
+sourceSets {
+    integrationTest {
+        resources {
+            srcDirs("test/resources")
+        }
+    }
+}
+
+
 val commitSha: String by lazy {
     ByteArrayOutputStream().use {
         project.exec {
@@ -20,6 +29,7 @@ val commitSha: String by lazy {
         it.toString(Charsets.UTF_8.name()).trim()
     }
 }
+
 
 buildScan {
     setTermsOfServiceAgree("yes")
@@ -44,6 +54,10 @@ tasks {
     }
     processIntegrationTestResources {
         dependsOn("resolveIntegrationTestDependencies")
+    }
+
+    integrationTest {
+        environment("TEST_TIMEOUT", "1000000")
     }
 }
 
@@ -89,5 +103,6 @@ sharedLibrary {
         dependency("org.jenkins-ci.plugins", "docker-workflow", "1.24")
         dependency("org.jenkins-ci.plugins", "htmlpublisher", "1.23")
         dependency("org.jenkins-ci.plugins", "durable-task", "1.15")
+        dependency("org.jenkins-ci.plugins", "ansicolor", "0.5.2")
     }
 }

@@ -1,0 +1,12 @@
+Label,Notation,Parent Notation,Sort Priority
+Total number of deaths registered,total-number-of-deaths-registered,,1
+Average number of deaths registered in corresponding week over previous 5 years 2015 to 2019,average-number-of-deaths-registered-in-corresponding-week-over-previous-5-years-2015-to-2019,,2
+Minimum in previous 5 years,minimum-in-previous-5-years,,3
+Maximum in previous 5 years,maximum-in-previous-5-years,,4
+Respiratory deaths registered,respiratory-deaths-registered,,5
+Average number of respiratory deaths registered in corresponding week over previous 5 years 2015 to 2019,average-number-of-respiratory-deaths-registered-in-corresponding-week-over-previous-5-years-2015-to-2019,,6
+Covid 19 deaths registered,covid-19-deaths-registered,,7
+Covid 19 registered deaths,covid-19-registered-deaths,,8
+Covid 19 deaths registered in Week,'covid-19-deaths-registered-in-week',,9
+Respiratory Deaths Registered In Week,'respiratory-deaths-registered-in-week',,10
+Total Number of Deaths Registered In Week,'total-number-of-deaths-registered-in-week',,11

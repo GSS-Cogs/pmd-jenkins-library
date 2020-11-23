@@ -1,7 +1,7 @@
 package uk.org.floop.jenkins_pmd
 
-import groovy.json.JsonSlurper
-import hudson.FilePath
+import com.github.tomakehurst.wiremock.junit.WireMockClassRule
+import hudson.slaves.EnvironmentVariablesNodeProperty
 import org.jenkinsci.lib.configprovider.ConfigProvider
 import org.jenkinsci.plugins.configfiles.ConfigFileStore
 import org.jenkinsci.plugins.configfiles.GlobalConfigFiles
@@ -13,20 +13,28 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.jvnet.hudson.test.JenkinsRule
+import org.jvnet.hudson.test.recipes.LocalData
+import org.jvnet.hudson.test.recipes.WithTimeout
 
 class PipelineTests {
 
     @Rule
     public JenkinsRule rule = new JenkinsRule()
 
+    @Rule
+    public WireMockClassRule instanceRule = DrafterTests.wireMockRule
+
+    @Rule
+    public WireMockClassRule oauthRule = DrafterTests.oauthWireMockRule
+
     @Before
     void setupConfigFile() {
-        GlobalConfigFiles globalConfigFiles = rule.jenkins
-                .getExtensionList(ConfigFileStore.class)
-                .get(GlobalConfigFiles.class)
-        CustomConfig.CustomConfigProvider configProvider = rule.jenkins
-                .getExtensionList(ConfigProvider.class)
-                .get(CustomConfig.CustomConfigProvider.class)
+        DrafterTests.setUpConfigFile(rule, instanceRule, oauthRule)
+    }
+
+    @Before
+    void setupCredentials() {
+        DrafterTests.setUpCredentials()
     }
 
     @Before
@@ -34,13 +42,23 @@ class PipelineTests {
         RuleBootstrapper.setup(rule)
     }
 
-    @Test
-    void "Family pipeline"() {
+    @Test(timeout=0l) // Let jUnit know not to apply timeouts here.
+    @LocalData // Find the associated data in test/resources/uk/org/floop/jenkins_pmd/PipelineTests/FamilyPipeline
+    @WithTimeout(10000) // Override Jenkins test harness timeout. 180 seconds is not long enough.
+    void "FamilyPipeline"() {
         final CpsFlowDefinition flow = new CpsFlowDefinition('''
-        node {
           familyTransformPipeline {}
-        }'''.stripIndent(), true)
+        '''.stripIndent())
         final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
+
+        final variablesNodeProperty = new EnvironmentVariablesNodeProperty()
+        final envVars = variablesNodeProperty.getEnvVars()
+        envVars.put("JOB_BASE_NAME", "TestJob")
+
+        rule.jenkins
+                .getGlobalNodeProperties()
+                .add(variablesNodeProperty);
+
         workflowJob.definition = flow
 
         final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)

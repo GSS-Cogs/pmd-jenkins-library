@@ -11,9 +11,7 @@ import com.github.tomakehurst.wiremock.stubbing.Scenario
 import hudson.FilePath
 import org.apache.jena.riot.RDFLanguages
 import org.apache.jena.riot.RDFParser
-import org.apache.jena.riot.lang.StreamRDFCounting
 import org.apache.jena.riot.system.ErrorHandlerFactory
-import org.apache.jena.riot.system.StreamRDFCountingBase
 import org.apache.jena.riot.system.StreamRDFLib
 import org.jenkinsci.lib.configprovider.ConfigProvider
 import org.jenkinsci.plugins.configfiles.ConfigFileStore
@@ -38,7 +36,6 @@ class DrafterTests {
     @ClassRule
     public static WireMockClassRule wireMockRule = new WireMockClassRule(WireMockConfiguration.options()
             .dynamicPort()
-    //.port(8123)
             .usingFilesUnderClasspath("test/resources")
             .notifier(new ConsoleNotifier(true))
     )
@@ -61,12 +58,11 @@ class DrafterTests {
         RuleBootstrapper.setup(rule)
     }
 
-    @Before
-    void setupConfigFile() {
-        GlobalConfigFiles globalConfigFiles = rule.jenkins
+    public static void setUpConfigFile(JenkinsRule jenkinsRule, WireMockClassRule wireMockRule, WireMockClassRule oauthWireMockRule) {
+        GlobalConfigFiles globalConfigFiles = jenkinsRule.jenkins
                 .getExtensionList(ConfigFileStore.class)
                 .get(GlobalConfigFiles.class)
-        CustomConfig.CustomConfigProvider configProvider = rule.jenkins
+        CustomConfig.CustomConfigProvider configProvider = jenkinsRule.jenkins
                 .getExtensionList(ConfigProvider.class)
                 .get(CustomConfig.CustomConfigProvider.class)
         globalConfigFiles.save(
@@ -81,13 +77,22 @@ class DrafterTests {
     }
 
     @Before
-    void setupCredentials() {
+    void setupConfigFile() {
+        setupConfigFile(rule, wireMockRule, oauthWireMockRule)
+    }
+
+    public static void setUpCredentials(){
         StandardUsernamePasswordCredentials key = new UsernamePasswordCredentialsImpl(
                 CredentialsScope.GLOBAL,
                 "onspmd4", "Access to PMD APIs",
                 "client_id", "client_secret")
         SystemCredentialsProvider.getInstance().getCredentials().add(key)
         SystemCredentialsProvider.getInstance().save()
+    }
+
+    @Before
+    void setupCredentials() {
+        setUpCredentials()
     }
 
     @Test

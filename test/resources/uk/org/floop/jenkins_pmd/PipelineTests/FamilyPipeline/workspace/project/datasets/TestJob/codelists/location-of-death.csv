@@ -1,0 +1,8 @@
+Label,Notation,Parent Notation,Sort Priority
+All,all,,1
+Hospital,hospital,,2
+Care home,care-home,,3
+Hospice,hospice,,4
+Home,home,,5
+Other,other,,6
+Total,total,,7
