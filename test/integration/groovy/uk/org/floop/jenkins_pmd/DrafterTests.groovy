@@ -587,4 +587,41 @@ class DrafterTests {
         rule.assertLogContains('SUCCESS', firstResult)
         rule.assertLogContains('http://example.org/data-graph', firstResult)
     }
+
+    @Test
+    void "claimDraftsets"() {
+        oauthRule.resetRequests()
+        instanceRule.resetRequests()
+        instanceRule.stubFor(get(urlMatching("/v1/draftsets.*"))
+                .withHeader("Accept", equalTo("application/json"))
+                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
+                .willReturn(ok()
+                        .withBodyFile("listClaimableDraftsets.json")
+                        .withHeader("Content-Type", "application/json")))
+        instanceRule.stubFor(put(urlMatching("/v1/draftset/([0-9a-fA-F\\-]+)/claim"))
+                .withHeader("Accept", equalTo("application/json"))
+                .withHeader("Authorization", equalTo("Bearer eyJz93a...k4laUWw"))
+                .willReturn(ok()
+                        .withBodyFile("claimedDraftset.json")
+                        .withHeader("Content-Type", "application/json")))
+        final CpsFlowDefinition flow = new CpsFlowDefinition('''
+        import uk.org.floop.jenkins_pmd.Drafter
+        node {
+            def pmd = pmdConfig("pmd")
+            pmd.drafter
+                    .listDraftsets(Drafter.Include.CLAIMABLE)
+                    .findAll { it['display-name'] == env.JOB_NAME }
+                    .each {
+                        pmd.drafter.claimDraftset(it.id)
+                    }
+        }'''.stripIndent(), true)
+        final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
+        workflowJob.definition = flow
+
+        final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
+        oauthRule.verify(postRequestedFor(urlEqualTo("/oauth/token")))
+        instanceRule.verify(getRequestedFor(urlEqualTo("/v1/draftsets?include=claimable")))
+        instanceRule.verify(putRequestedFor(urlEqualTo("/v1/draftset/4C7B4255-0F80-4DA1-A14E-105ACE0AB36E/claim")))
+    }
+
 }

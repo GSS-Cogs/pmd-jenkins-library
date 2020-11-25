@@ -6,17 +6,13 @@ import hudson.FilePath
 import org.apache.http.Consts
 import org.apache.http.HttpHeaders
 import org.apache.http.HttpHost
-import org.apache.http.HttpRequest
 import org.apache.http.HttpResponse
 import org.apache.http.client.fluent.Executor
 import org.apache.http.client.fluent.Form
 import org.apache.http.client.fluent.Request
-import org.apache.http.entity.ContentType
-import org.apache.http.message.BasicNameValuePair
-import org.apache.http.util.EntityUtils
 import org.apache.http.client.utils.URIBuilder
-
-import java.util.zip.GZIPInputStream
+import org.apache.http.entity.ContentType
+import org.apache.http.util.EntityUtils
 
 class Drafter implements Serializable {
     private PMD pmd
@@ -299,6 +295,20 @@ class Drafter implements Serializable {
             throw new DrafterException("The submit request could not be processed ${errorMsg(response)}")
         } else {
             throw new DrafterException("Problem submitting draftset ${errorMsg(response)}")
+        }
+    }
+
+    def claimDraftset(String id) {
+        String path = "/v1/draftset/${id}/claim"
+        Executor exec = getExec()
+        HttpResponse response = exec.execute(
+                Request.Put(apiBase.resolve(path))
+                        .addHeader("Authorization", "Bearer ${token}")
+                        .addHeader("Accept", "application/json")
+                        .userAgent(PMDConfig.UA)
+        ).returnResponse()
+        if (response.getStatusLine().statusCode != 200) {
+            throw new DrafterException("Unable to claim draftset ${errorMsg(response)}")
         }
     }
 
