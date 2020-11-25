@@ -55,10 +55,6 @@ tasks {
     processIntegrationTestResources {
         dependsOn("resolveIntegrationTestDependencies")
     }
-
-    integrationTest {
-        environment("jenkins.test.noSpaceInTmpDirs", "true")
-    }
 }
 
 java {
