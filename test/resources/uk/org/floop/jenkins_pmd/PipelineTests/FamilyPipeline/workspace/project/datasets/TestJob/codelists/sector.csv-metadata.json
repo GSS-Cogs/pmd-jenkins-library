@@ -1,7 +1,7 @@
 {
   "@context": "http://www.w3.org/ns/csvw",
-  "@id": "http://gss-data.org.uk/data/gss_data/covid-19/nisra-weekly-deaths-year-ni#schema",
-  "url": "registered-death-type.csv",
+  "@id": "http://gss-data.org.uk/data/gss_data/trade/dcms-dcms-sectors-economic-estimates-year-trade-in-services#schema",
+  "url": "sector.csv",
   "tableSchema": {
     "columns": [
       {
@@ -30,7 +30,7 @@
         },
         "required": false,
         "propertyUrl": "skos:broader",
-        "valueUrl": "http://gss-data.org.uk/data/gss_data/covid-19/nisra-weekly-deaths-year-ni#concept/registered-death-type/{parent_notation}"
+        "valueUrl": "http://gss-data.org.uk/data/gss_data/trade/dcms-dcms-sectors-economic-estimates-year-trade-in-services#concept/sector/{parent_notation}"
       },
       {
         "titles": "Sort Priority",
@@ -54,16 +54,15 @@
       {
         "virtual": true,
         "propertyUrl": "skos:inScheme",
-        "valueUrl": "http://gss-data.org.uk/data/gss_data/covid-19/nisra-weekly-deaths-year-ni#scheme/registered-death-type"
+        "valueUrl": "http://gss-data.org.uk/data/gss_data/trade/dcms-dcms-sectors-economic-estimates-year-trade-in-services#scheme/sector"
       }
     ],
     "primaryKey": "notation",
-    "aboutUrl": "http://gss-data.org.uk/data/gss_data/covid-19/nisra-weekly-deaths-year-ni#concept/registered-death-type/{notation}"
+    "aboutUrl": "http://gss-data.org.uk/data/gss_data/trade/dcms-dcms-sectors-economic-estimates-year-trade-in-services#concept/sector/{notation}"
   },
   "prov:hadDerivation": {
-    "@id": "http://gss-data.org.uk/data/gss_data/covid-19/nisra-weekly-deaths-year-ni#scheme/registered-death-type",
+    "@id": "http://gss-data.org.uk/data/gss_data/trade/dcms-dcms-sectors-economic-estimates-year-trade-in-services#scheme/sector",
     "@type": "skos:ConceptScheme",
-    "rdfs:label": "Registered Death Type",
-    "skos:hasTopConcept { "@id": "http://gss-data.org.uk/data/gss_data/covid-19/nisra-weekly-deaths-year-ni#concept/registered-death-type/all" }
+    "rdfs:label": "Sector"
   }
 }

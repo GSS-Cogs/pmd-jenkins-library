@@ -58,27 +58,16 @@ class DrafterTests {
         RuleBootstrapper.setup(rule)
     }
 
-    public static void setUpConfigFile(JenkinsRule jenkinsRule, WireMockClassRule wireMockRule, WireMockClassRule oauthWireMockRule) {
-        GlobalConfigFiles globalConfigFiles = jenkinsRule.jenkins
-                .getExtensionList(ConfigFileStore.class)
-                .get(GlobalConfigFiles.class)
-        CustomConfig.CustomConfigProvider configProvider = jenkinsRule.jenkins
-                .getExtensionList(ConfigProvider.class)
-                .get(CustomConfig.CustomConfigProvider.class)
-        globalConfigFiles.save(
-                new CustomConfig("pmd", "config.json", "Details of endpoint URLs and credentials", """{
-  "pmd_api": "http://localhost:${wireMockRule.port()}",
-  "oauth_token_url": "http://localhost:${oauthWireMockRule.port()}/oauth/token",
-  "oauth_audience": "jenkins",
-  "credentials": "onspmd4",
-  "default_mapping": "https://github.com/ONS-OpenData/ref_trade/raw/master/columns.csv",
-  "base_uri": "http://gss-data.org.uk"
-}""", configProvider.getProviderId()))
-    }
-
     @Before
     void setupConfigFile() {
-        setupConfigFile(rule, wireMockRule, oauthWireMockRule)
+        Helpers.setUpConfigFile(rule, """{
+          "pmd_api": "http://localhost:${wireMockRule.port()}",
+          "oauth_token_url": "http://localhost:${oauthWireMockRule.port()}/oauth/token",
+          "oauth_audience": "jenkins",
+          "credentials": "onspmd4",
+          "default_mapping": "https://github.com/ONS-OpenData/ref_trade/raw/master/columns.csv",
+          "base_uri": "http://gss-data.org.uk"
+        }""")
     }
 
     public static void setUpCredentials(){

@@ -8,4 +8,5 @@ class PMDConfig implements Serializable {
     String credentials
     String default_mapping
     String base_uri
+    Boolean mock_drafter = false
 }

@@ -57,7 +57,7 @@ tasks {
     }
 
     integrationTest {
-        environment("TEST_TIMEOUT", "1000000")
+        environment("jenkins.test.noSpaceInTmpDirs", "true")
     }
 }
 
@@ -104,5 +104,7 @@ sharedLibrary {
         dependency("org.jenkins-ci.plugins", "htmlpublisher", "1.23")
         dependency("org.jenkins-ci.plugins", "durable-task", "1.15")
         dependency("org.jenkins-ci.plugins", "ansicolor", "0.5.2")
+        dependency("org.jenkins-ci.plugins", "mask-passwords", "2.13")
+
     }
 }
