@@ -24,23 +24,26 @@ class PipelineTests {
     @Rule
     public JenkinsRule rule = new JenkinsRule()
 
-    @Rule
-    public WireMockClassRule instanceRule = DrafterTests.wireMockRule
-
-    @Rule
-    public WireMockClassRule oauthRule = DrafterTests.oauthWireMockRule
-
+    /**
+     * `"mock_drafter": true` ensures that we use the `MockDrafter` instance of `AbstractDrafter` so we don't make any
+     * HTTP request at all.
+     */
     @Before
     void setupConfigFile() {
         Helpers.setUpConfigFile(rule, """{
-          "pmd_api": "http://localhost:${instanceRule.port()}",
-          "oauth_token_url": "http://localhost:${oauthRule.port()}/oauth/token",
+          "pmd_api": "http://none",
+          "oauth_token_url": "http://none/oauth/token",
           "oauth_audience": "jenkins",
           "credentials": "onspmd4",
           "default_mapping": "https://github.com/ONS-OpenData/ref_trade/raw/master/columns.csv",
           "base_uri": "http://gss-data.org.uk",
           "mock_drafter": true
         }""")
+    }
+
+    @Before
+    void setupCredentials() {
+        DrafterTests.setUpCredentials()
     }
 
     @Before
@@ -61,7 +64,7 @@ class PipelineTests {
         final envVars = variablesNodeProperty.getEnvVars()
         // JOB_BASE_NAME must match test data folder structure
         envVars.put("JOB_BASE_NAME", "TestJob")
-        // jUnit has a nasty habbit of setting the build status to 'UNSTABLE' when we need 'SUCCESS'.
+        // jUnit has a nasty habit of setting the build status to 'UNSTABLE' when we need 'SUCCESS'.
         // Let's just stop running that bit of code until we get a sufficient level of unit tests in this test.
         envVars.put("SUPPRESS_JUNIT", "true")
 
@@ -71,7 +74,8 @@ class PipelineTests {
 
         workflowJob.definition = flow
 
-        final WorkflowRun firstResult = rule.buildAndAssertSuccess(workflowJob)
+        final WorkflowRun buildResult = rule.buildAndAssertSuccess(workflowJob)
+        assert buildResult.artifacts.any()
     }
 
 }

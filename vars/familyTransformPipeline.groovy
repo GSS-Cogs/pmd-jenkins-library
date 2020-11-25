@@ -189,7 +189,6 @@ def call(body) {
                                     }
                                     def outputFiles = findFiles(glob: "out/*.ttl.gz")
                                     if (outputFiles.length == 0) {
-                                        sh "ls out"
                                         error(message: "No output RDF files found")
                                     } else {
                                         for (def observations : outputFiles) {
