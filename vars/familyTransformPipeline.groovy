@@ -101,13 +101,9 @@ def call(body) {
                                 dir(DATASET_DIR) {
                                     def datasets = []
 
-                                    // Match all files that end .csv or .csv.gz
-                                    def csvList = findFiles(glob: "out/*.csv")
-                                    def csvGzList = findFiles(glob: "out/*.csv.gz")
-
-                                    for (def csv : csvList + csvGzList) {
+                                    for (def csv : findFiles(glob: "out/*.csv")) {
                                         if (fileExists("out/${csv.name}-metadata.json")) {
-                                            String baseName = csv.name.take(csv.name.lastIndexOf('.csv'))
+                                            String baseName = csv.name.take(csv.name.lastIndexOf('.'))
                                             datasets.add([
                                                     "csv"     : "out/${csv.name}",
                                                     "metadata": "out/${csv.name}-metadata.trig",
