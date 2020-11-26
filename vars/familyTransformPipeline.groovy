@@ -195,7 +195,7 @@ def call(body) {
                                             echo "Adding ${observations.name}"
                                             drafter.addData(
                                                     id,
-                                                    "out/${observations.name}",
+                                                    "${DATASET_DIR}/out/${observations.name}",
                                                     "text/turtle",
                                                     "UTF-8",
                                                     datasetGraph
@@ -203,7 +203,7 @@ def call(body) {
                                             writeFile(file: "out/${baseName}-ds-prov.ttl", text: util.jobPROV(datasetGraph))
                                             drafter.addData(
                                                     id,
-                                                    "out/${baseName}-ds-prov.ttl",
+                                                    "${DATASET_DIR}/out/${baseName}-ds-prov.ttl",
                                                     "text/turtle",
                                                     "UTF-8",
                                                     datasetGraph
@@ -211,7 +211,7 @@ def call(body) {
                                             echo "Adding metadata."
                                             drafter.addData(
                                                     id,
-                                                    "out/${baseName}.csv-metadata.trig",
+                                                    "${DATASET_DIR}/out/${baseName}.csv-metadata.trig",
                                                     "application/trig",
                                                     "UTF-8",
                                                     metadataGraph
@@ -219,7 +219,7 @@ def call(body) {
                                             writeFile(file: "out/${baseName}-md-prov.ttl", text: util.jobPROV(metadataGraph))
                                             drafter.addData(
                                                     id,
-                                                    "out/${baseName}-md-prov.ttl",
+                                                    "${DATASET_DIR}/out/${baseName}-md-prov.ttl",
                                                     "text/turtle",
                                                     "UTF-8",
                                                     metadataGraph
@@ -232,7 +232,7 @@ def call(body) {
                                         echo "Adding local codelist ${baseName}"
                                         drafter.addData(
                                                 id,
-                                                "out/codelists/${codelist.name}",
+                                                "${DATASET_DIR}/out/codelists/${codelist.name}",
                                                 "text/turtle",
                                                 "UTF-8",
                                                 codelistGraph
@@ -240,7 +240,7 @@ def call(body) {
                                         writeFile(file: "out/codelists/${baseName}-prov.ttl", text: util.jobPROV(codelistGraph))
                                         drafter.addData(
                                                 id,
-                                                "out/codelists/${baseName}-prov.ttl",
+                                                "${DATASET_DIR}/out/codelists/${baseName}-prov.ttl",
                                                 "text/turtle",
                                                 "UTF-8",
                                                 codelistGraph
