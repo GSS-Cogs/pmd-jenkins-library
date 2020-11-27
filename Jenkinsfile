@@ -12,6 +12,7 @@ pipeline {
     post {
         always {
             script {
+                junit allowEmptyResults: true, testResults: 'build/test-results/**/*.xml'
                 publishHTML([
                         allowMissing: true,
                         alwaysLinkToLastBuild: true,
