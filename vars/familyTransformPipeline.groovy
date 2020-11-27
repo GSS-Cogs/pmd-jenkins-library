@@ -13,7 +13,7 @@ def call(body) {
             label 'master'
         }
         environment {
-            DATASET_DIR = "datasets/${JOB_BASE_NAME}"
+            DATASET_DIR = "${pwd()}/datasets/${JOB_BASE_NAME}"
             JOB_ID = util.getJobID()
         }
         stages {
@@ -39,10 +39,12 @@ def call(body) {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
                                 ansiColor('xterm') {
-                                    if (fileExists("${DATASET_DIR}/main.py")) {
-                                        sh "jupytext --to notebook ${DATASET_DIR}/*.py"
+                                    dir(DATASET_DIR) {
+                                        if (fileExists("main.py")) {
+                                            sh "jupytext --to notebook '*.py'"
+                                        }
+                                        sh "jupyter-nbconvert --to html --output-dir='out' --ExecutePreprocessor.timeout=None --execute 'main.ipynb'"
                                     }
-                                    sh "jupyter-nbconvert --to html --output-dir=${DATASET_DIR}/out --ExecutePreprocessor.timeout=None --execute '${DATASET_DIR}/main.ipynb'"
                                 }
                             }
                         }
@@ -53,6 +55,7 @@ def call(body) {
                                 image 'gsscogs/csvlint'
                                 reuseNode true
                                 alwaysPull true
+
                             }
                         }
                         when {
@@ -70,11 +73,15 @@ def call(body) {
                                 FAILED_STAGE = env.STAGE_NAME
                                 ansiColor('xterm') {
                                     def schemas = []
-                                    for (def schema : findFiles(glob: "${DATASET_DIR}/out/*-metadata.json")) {
-                                        schemas.add("${DATASET_DIR}/out/${schema.name}")
-                                    }
-                                    for (String schema : schemas) {
-                                        sh "csvlint --no-verbose -s '${schema}'"
+                                    dir("${DATASET_DIR}") {
+                                        dir("out") {
+                                            for (def schema : findFiles(glob: "*-metadata.json")) {
+                                                schemas.add("${schema.name}")
+                                            }
+                                            for (String schema : schemas) {
+                                                sh "csvlint --no-verbose -s ${schema}"
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -91,22 +98,25 @@ def call(body) {
                         steps {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
-                                def datasets = []
-                                for (def csv : findFiles(glob: "${DATASET_DIR}/out/*.csv")) {
-                                    if (fileExists("${DATASET_DIR}/out/${csv.name}-metadata.json")) {
-                                        String baseName = csv.name.take(csv.name.lastIndexOf('.'))
-                                        datasets.add([
-                                                "csv": "${DATASET_DIR}/out/${csv.name}",
-                                                "metadata": "${DATASET_DIR}/out/${csv.name}-metadata.trig",
-                                                "csvw": "${DATASET_DIR}/out/${csv.name}-metadata.json",
-                                                "output": "${DATASET_DIR}/out/${baseName}"
-                                        ])
+                                dir(DATASET_DIR) {
+                                    def datasets = []
+
+                                    for (def csv : findFiles(glob: "out/*.csv")) {
+                                        if (fileExists("out/${csv.name}-metadata.json")) {
+                                            String baseName = csv.name.take(csv.name.lastIndexOf('.'))
+                                            datasets.add([
+                                                    "csv"     : "out/${csv.name}",
+                                                    "metadata": "out/${csv.name}-metadata.trig",
+                                                    "csvw"    : "out/${csv.name}-metadata.json",
+                                                    "output"  : "out/${baseName}"
+                                            ])
+                                        }
                                     }
-                                }
-                                writeFile file: "graphs.sparql", text:  """SELECT ?md ?ds { GRAPH ?md { [] <http://publishmydata.com/pmdcat#graph> ?ds } }"""
-                                for (def dataset : datasets) {
-                                    sh "csv2rdf -t '${dataset.csv}' -u '${dataset.csvw}' -m annotated | pigz > '${dataset.output}.ttl.gz'"
-                                    sh "sparql --data='${dataset.metadata}' --query=graphs.sparql --results=JSON > '${dataset.output}-graphs.json'"
+                                    writeFile file: "graphs.sparql", text: """SELECT ?md ?ds { GRAPH ?md { [] <http://publishmydata.com/pmdcat#graph> ?ds } }"""
+                                    for (def dataset : datasets) {
+                                        sh "csv2rdf -t '${dataset.csv}' -u '${dataset.csvw}' -m annotated | pigz > '${dataset.output}.ttl.gz'"
+                                        sh "sparql --data='${dataset.metadata}' --query=graphs.sparql --results=JSON > '${dataset.output}-graphs.json'"
+                                    }
                                 }
                             }
                         }
@@ -122,20 +132,22 @@ def call(body) {
                         steps {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
-                                def codelists = []
-                                for (def metadata : findFiles(glob: "${DATASET_DIR}/codelists/*.csv-metadata.json") +
-                                        findFiles(glob: "${DATASET_DIR}/out/codelists/*.csv-metadata.json")) {
-                                    String baseName = metadata.name.substring(0, metadata.name.lastIndexOf('.csv-metadata.json'))
-                                    String dirName = metadata.path.take(metadata.path.lastIndexOf('/'))
-                                    codelists.add([
-                                            "csv": "${dirName}/${baseName}.csv",
-                                            "csvw": "${dirName}/${baseName}.csv-metadata.json",
-                                            "output": "${DATASET_DIR}/out/codelists/${baseName}"
-                                    ])
-                                }
-                                sh "mkdir -p ${DATASET_DIR}/out/codelists"
-                                for (def codelist : codelists) {
-                                    sh "csv2rdf -t '${codelist.csv}' -u '${codelist.csvw}' -m annotated | pigz > '${codelist.output}.ttl.gz'"
+                                dir(DATASET_DIR) {
+                                    def codelists = []
+                                    for (def metadata : findFiles(glob: "codelists/*.csv-metadata.json") +
+                                            findFiles(glob: "out/codelists/*.csv-metadata.json")) {
+                                        String baseName = metadata.name.substring(0, metadata.name.lastIndexOf('.csv-metadata.json'))
+                                        String dirName = metadata.path.take(metadata.path.lastIndexOf('/'))
+                                        codelists.add([
+                                                "csv"   : "${dirName}/${baseName}.csv",
+                                                "csvw"  : "${dirName}/${baseName}.csv-metadata.json",
+                                                "output": "out/codelists/${baseName}"
+                                        ])
+                                    }
+                                    sh "mkdir -p out/codelists"
+                                    for (def codelist : codelists) {
+                                        sh "csv2rdf -t '${codelist.csv}' -u '${codelist.csvw}' -m annotated | pigz > '${codelist.output}.ttl.gz'"
+                                    }
                                 }
                             }
                         }
@@ -158,80 +170,82 @@ def call(body) {
                         steps {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
-                                def pmd = pmdConfig("pmd")
-                                pmd.drafter
-                                        .listDraftsets(Drafter.Include.OWNED)
+                                dir(DATASET_DIR) {
+                                    def pmd = pmdConfig("pmd")
+                                    def drafter = pmd.drafter
+                                    drafter.listDraftsets(Drafter.Include.OWNED)
                                         .findAll { it['display-name'] == env.JOB_NAME }
                                         .each {
-                                            pmd.drafter.deleteDraftset(it.id)
+                                            drafter.deleteDraftset(it.id)
                                         }
-                                String id = pmd.drafter.createDraftset(env.JOB_NAME).id
-                                for (graph in util.jobGraphs(pmd, id).unique()) {
-                                    echo "Removing own graph ${graph}"
-                                    pmd.drafter.deleteGraph(id, graph)
-                                }
-                                def outputFiles = findFiles(glob: "${DATASET_DIR}/out/*.ttl.gz")
-                                if (outputFiles.length == 0) {
-                                    error(message: "No output RDF files found")
-                                } else {
-                                    for (def observations : outputFiles) {
-                                        String baseName = observations.name.substring(0, observations.name.lastIndexOf('.ttl.gz'))
-                                        def graphs = readJSON(text: readFile(file: "${DATASET_DIR}/out/${baseName}-graphs.json"))
-                                        String datasetGraph = graphs.results.bindings[0].ds.value
-                                        String metadataGraph = graphs.results.bindings[0].md.value
-                                        echo "Adding ${observations.name}"
-                                        pmd.drafter.addData(
+                                    String id = drafter.createDraftset(env.JOB_NAME).id
+                                    for (graph in util.jobGraphs(pmd, id).unique()) {
+                                        echo "Removing own graph ${graph}"
+                                        drafter.deleteGraph(id, graph)
+                                    }
+                                    def outputFiles = findFiles(glob: "out/*.ttl.gz")
+                                    if (outputFiles.length == 0) {
+                                        error(message: "No output RDF files found")
+                                    } else {
+                                        for (def observations : outputFiles) {
+                                            String baseName = observations.name.substring(0, observations.name.lastIndexOf('.ttl.gz'))
+                                            def graphs = readJSON(text: readFile(file: "out/${baseName}-graphs.json"))
+                                            String datasetGraph = graphs.results.bindings[0].ds.value
+                                            String metadataGraph = graphs.results.bindings[0].md.value
+                                            echo "Adding ${observations.name}"
+                                            drafter.addData(
+                                                    id,
+                                                    "${DATASET_DIR}/out/${observations.name}",
+                                                    "text/turtle",
+                                                    "UTF-8",
+                                                    datasetGraph
+                                            )
+                                            writeFile(file: "out/${baseName}-ds-prov.ttl", text: util.jobPROV(datasetGraph))
+                                            drafter.addData(
+                                                    id,
+                                                    "${DATASET_DIR}/out/${baseName}-ds-prov.ttl",
+                                                    "text/turtle",
+                                                    "UTF-8",
+                                                    datasetGraph
+                                            )
+                                            echo "Adding metadata."
+                                            drafter.addData(
+                                                    id,
+                                                    "${DATASET_DIR}/out/${baseName}.csv-metadata.trig",
+                                                    "application/trig",
+                                                    "UTF-8",
+                                                    metadataGraph
+                                            )
+                                            writeFile(file: "out/${baseName}-md-prov.ttl", text: util.jobPROV(metadataGraph))
+                                            drafter.addData(
+                                                    id,
+                                                    "${DATASET_DIR}/out/${baseName}-md-prov.ttl",
+                                                    "text/turtle",
+                                                    "UTF-8",
+                                                    metadataGraph
+                                            )
+                                        }
+                                    }
+                                    for (def codelist : findFiles(glob: "out/codelists/*.ttl.gz")) {
+                                        String baseName = codelist.name.substring(0, codelist.name.lastIndexOf('.ttl.gz'))
+                                        String codelistGraph = "${pmd.config.base_uri}/graph/${util.slugise(env.JOB_NAME)}/${baseName}"
+                                        echo "Adding local codelist ${baseName}"
+                                        drafter.addData(
                                                 id,
-                                                "${WORKSPACE}/${DATASET_DIR}/out/${observations.name}",
+                                                "${DATASET_DIR}/out/codelists/${codelist.name}",
                                                 "text/turtle",
                                                 "UTF-8",
-                                                datasetGraph
+                                                codelistGraph
                                         )
-                                        writeFile(file: "${DATASET_DIR}/out/${baseName}-ds-prov.ttl", text: util.jobPROV(datasetGraph))
-                                        pmd.drafter.addData(
+                                        writeFile(file: "out/codelists/${baseName}-prov.ttl", text: util.jobPROV(codelistGraph))
+                                        drafter.addData(
                                                 id,
-                                                "${WORKSPACE}/${DATASET_DIR}/out/${baseName}-ds-prov.ttl",
+                                                "${DATASET_DIR}/out/codelists/${baseName}-prov.ttl",
                                                 "text/turtle",
                                                 "UTF-8",
-                                                datasetGraph
-                                        )
-                                        echo "Adding metadata."
-                                        pmd.drafter.addData(
-                                                id,
-                                                "${WORKSPACE}/${DATASET_DIR}/out/${baseName}.csv-metadata.trig",
-                                                "application/trig",
-                                                "UTF-8",
-                                                metadataGraph
-                                        )
-                                        writeFile(file: "${DATASET_DIR}/out/${baseName}-md-prov.ttl", text: util.jobPROV(metadataGraph))
-                                        pmd.drafter.addData(
-                                                id,
-                                                "${WORKSPACE}/${DATASET_DIR}/out/${baseName}-md-prov.ttl",
-                                                "text/turtle",
-                                                "UTF-8",
-                                                metadataGraph
+                                                codelistGraph
                                         )
                                     }
-                                }
-                                for (def codelist : findFiles(glob: "${DATASET_DIR}/out/codelists/*.ttl.gz")) {
-                                    String baseName = codelist.name.substring(0, codelist.name.lastIndexOf('.ttl.gz'))
-                                    String codelistGraph = "${pmd.config.base_uri}/graph/${util.slugise(env.JOB_NAME)}/${baseName}"
-                                    echo "Adding local codelist ${baseName}"
-                                    pmd.drafter.addData(
-                                            id,
-                                            "${WORKSPACE}/${DATASET_DIR}/out/codelists/${codelist.name}",
-                                            "text/turtle",
-                                            "UTF-8",
-                                            codelistGraph
-                                    )
-                                    writeFile(file: "${DATASET_DIR}/out/codelists/${baseName}-prov.ttl", text: util.jobPROV(codelistGraph))
-                                    pmd.drafter.addData(
-                                            id,
-                                            "${WORKSPACE}/${DATASET_DIR}/out/codelists/${baseName}-prov.ttl",
-                                            "text/turtle",
-                                            "UTF-8",
-                                            codelistGraph
-                                    )
                                 }
                             }
                         }
@@ -251,13 +265,14 @@ def call(body) {
                         steps {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
-                                pmd = pmdConfig("pmd")
-                                String draftId = pmd.drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
-                                String endpoint = pmd.drafter.getDraftsetEndpoint(draftId)
+                                def pmd = pmdConfig("pmd")
+                                def drafter = pmd.drafter
+                                String draftId = drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
+                                String endpoint = drafter.getDraftsetEndpoint(draftId)
                                 String dspath = util.slugise(env.JOB_NAME)
                                 def fromGraphs = util.jobGraphs(pmd, draftId) + util.referencedGraphs(pmd, draftId)
                                 String fromArgs = fromGraphs.unique().collect { '-f ' + it }.join(' ')
-                                String TOKEN = pmd.drafter.getToken()
+                                String TOKEN = drafter.getToken()
                                 wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: TOKEN, var: 'TOKEN']]]) {
                                     sh "sparql-test-runner -i -t /usr/local/tests/qb -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-qb.xml'"
                                     sh "sparql-test-runner -i -t /usr/local/tests/pmd/pmd4 -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-pmd.xml'"
@@ -282,9 +297,10 @@ def call(body) {
                                 steps {
                                     script {
                                         FAILED_STAGE = env.STAGE_NAME
-                                        pmd = pmdConfig("pmd")
-                                        String draftId = pmd.drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
-                                        pmd.drafter.submitDraftsetTo(draftId, Drafter.Role.EDITOR, null)
+                                        def pmd = pmdConfig("pmd")
+                                        def drafter = pmd.drafter
+                                        String draftId = drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
+                                        drafter.submitDraftsetTo(draftId, Drafter.Role.EDITOR, null)
                                     }
                                 }
                             }
@@ -302,9 +318,10 @@ def call(body) {
                                 steps {
                                     script {
                                         FAILED_STAGE = env.STAGE_NAME
-                                        pmd = pmdConfig("pmd")
-                                        String draftId = pmd.drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
-                                        pmd.drafter.publishDraftset(draftId)
+                                        def pmd = pmdConfig("pmd")
+                                        def drafter = pmd.drafter
+                                        String draftId = drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
+                                        drafter.publishDraftset(draftId)
                                     }
                                 }
                             }
@@ -316,11 +333,14 @@ def call(body) {
         post {
             always {
                 script {
-                    archiveArtifacts artifacts: "${DATASET_DIR}/out/", excludes: "${DATASET_DIR}/out/*.html"
-                    junit allowEmptyResults: true, testResults: 'reports/**/*.xml'
+                    def relativeDatasetDir = "datasets/${JOB_BASE_NAME}"
+                    archiveArtifacts artifacts: "${relativeDatasetDir}/out/*", excludes: "${relativeDatasetDir}/out/**/*.html"
+                    if (!Boolean.parseBoolean(env.SUPPRESS_JUNIT)) {
+                        junit allowEmptyResults: true, testResults: 'reports/**/*.xml'
+                    }
                     publishHTML([
                             allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true,
-                            reportDir   : "${DATASET_DIR}/out", reportFiles: 'main.html',
+                            reportDir   : "${relativeDatasetDir}/out", reportFiles: 'main.html',
                             reportName  : 'Transform'])
                 }
             }

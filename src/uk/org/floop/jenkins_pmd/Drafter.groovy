@@ -14,7 +14,7 @@ import org.apache.http.client.utils.URIBuilder
 import org.apache.http.entity.ContentType
 import org.apache.http.util.EntityUtils
 
-class Drafter implements Serializable {
+class Drafter extends AbstractDrafter implements Serializable {
     private PMD pmd
     private URI apiBase, authToken
     private HttpHost host
@@ -24,6 +24,7 @@ class Drafter implements Serializable {
     enum Include {
         ALL("all"), OWNED("owned"), CLAIMABLE("claimable")
         public final String value
+
         Include(String v) {
             this.value = v
         }
@@ -68,7 +69,7 @@ class Drafter implements Serializable {
         return exec
     }
 
-    def listDraftsets(Include include=Include.ALL) {
+    Collection<Dictionary<String, Object>> listDraftsets(Include include) {
         def js = new JsonSlurper()
         String path = (include == Include.ALL) ? "/v1/draftsets" : "/v1/draftsets?include=" + include.value
         def response = js.parse(
@@ -87,17 +88,17 @@ class Drafter implements Serializable {
         "${response.getStatusLine()} : ${EntityUtils.toString(response.getEntity())}"
     }
 
-    def createDraftset(String label) {
+    Dictionary<String, Object> createDraftset(String label) {
         String displayName = URLEncoder.encode(label, "UTF-8")
         String path = "/v1/draftsets?display-name=${displayName}"
         int retries = 5
         while (retries > 0) {
             HttpResponse response = getExec().execute(
-                            Request.Post(apiBase.resolve(path))
-                                    .addHeader("Authorization", "Bearer ${token}")
-                                    .addHeader("Accept", "application/json")
-                                    .userAgent(PMDConfig.UA)
-                    ).returnResponse()
+                    Request.Post(apiBase.resolve(path))
+                            .addHeader("Authorization", "Bearer ${token}")
+                            .addHeader("Accept", "application/json")
+                            .userAgent(PMDConfig.UA)
+            ).returnResponse()
             if (response.getStatusLine().statusCode == 200) {
                 return new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
             } else if (response.getStatusLine().statusCode == 503) {
@@ -113,7 +114,7 @@ class Drafter implements Serializable {
     def waitForLock() {
         Boolean waiting = true
         int holdOffTime = 5
-        while(waiting) {
+        while (waiting) {
             sleep(holdOffTime * 1000)
             HttpResponse response = getExec().execute(
                     Request.Get(apiBase.resolve('/v1/status/writes-locked'))
@@ -132,7 +133,7 @@ class Drafter implements Serializable {
         }
     }
 
-    def deleteGraph(String draftsetId, String graph) {
+    Dictionary<String, Object> deleteGraph(String draftsetId, String graph) {
         String encGraph = URLEncoder.encode(graph, "UTF-8")
         String path = "/v1/draftset/${draftsetId}/graph?graph=${encGraph}&silent=true"
         int retries = 5
@@ -155,15 +156,15 @@ class Drafter implements Serializable {
         throw new DrafterException("Problem deleting graph, maximum retries reached while waiting for lock.")
     }
 
-    def deleteDraftset(String draftsetId) {
+    Dictionary<String, Object> deleteDraftset(String draftsetId) {
         String path = "/v1/draftset/${draftsetId}"
         int retries = 5
         while (retries > 0) {
             HttpResponse response = getExec().execute(
-                            Request.Delete(apiBase.resolve(path))
-                                    .addHeader("Authorization", "Bearer ${token}")
-                                    .addHeader("Accept", "application/json")
-                                    .userAgent(PMDConfig.UA)
+                    Request.Delete(apiBase.resolve(path))
+                            .addHeader("Authorization", "Bearer ${token}")
+                            .addHeader("Accept", "application/json")
+                            .userAgent(PMDConfig.UA)
             ).returnResponse()
             if (response.getStatusLine().statusCode == 202) {
                 def jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
@@ -182,7 +183,8 @@ class Drafter implements Serializable {
     def waitForJob(URI finishedJob, String restartId) {
         Executor exec = getExec()
         int delay = 1000
-        int doublingRetries = 5 // double the delay each time until this many times around, at which point keep the delay (32s)
+        int doublingRetries = 5
+        // double the delay each time until this many times around, at which point keep the delay (32s)
         while (true) {
             HttpResponse jobResponse = exec.execute(
                     Request.Get(finishedJob)
@@ -194,7 +196,7 @@ class Drafter implements Serializable {
             def jobObj
             try {
                 jobObj = new JsonSlurper().parse(EntityUtils.toByteArray(jobResponse.getEntity()))
-            } catch(e) {
+            } catch (e) {
                 throw new DrafterException("Failed waiting for job ${errorMsg(jobResponse)}.\n${e}")
             }
             if (status == 404) {
@@ -221,7 +223,7 @@ class Drafter implements Serializable {
         }
     }
 
-    def addData(String draftId, String source, String mimeType, String encoding, String graph=null) {
+    Dictionary<String, Object> addData(String draftId, String source, String mimeType, String encoding, String graph) {
         String path = "/v1/draftset/${draftId}/data"
         if (graph) {
             String encGraph = URLEncoder.encode(graph, "UTF-8")
@@ -233,7 +235,7 @@ class Drafter implements Serializable {
             if (source.startsWith('http')) {
                 streamSource = Request.Get(source)
                         .userAgent(PMDConfig.UA)
-                        .addHeader('Accept' ,mimeType)
+                        .addHeader('Accept', mimeType)
                         .execute().returnContent().asStream()
             } else {
                 streamSource = new FilePath(new File(source)).read()
@@ -262,9 +264,9 @@ class Drafter implements Serializable {
         throw new DrafterException("Problem adding data, maximum retries reached while waiting for lock.")
     }
 
-    def findDraftset(String displayName, Include include=Include.ALL) {
+    Dictionary<String, Object> findDraftset(String displayName, Include include) {
         def drafts = listDraftsets(include)
-        def draftset = drafts.find  { it['display-name'] == displayName }
+        def draftset = drafts.find { it['display-name'] == displayName }
         if (draftset) {
             draftset
         } else {
@@ -273,7 +275,7 @@ class Drafter implements Serializable {
 
     }
 
-    def submitDraftsetTo(String id, Role role, String user) {
+    Dictionary<String, Object> submitDraftsetTo(String id, Role role, String user) {
         String path = "/v1/draftset/${id}/submit-to"
         Executor exec = getExec()
         URIBuilder uriBuilder = new URIBuilder(apiBase.resolve(path))
@@ -312,7 +314,7 @@ class Drafter implements Serializable {
         }
     }
 
-    def publishDraftset(String id) {
+    Dictionary<String, Object> publishDraftset(String id) {
         String path = "/v1/draftset/${id}/publish"
         Executor exec = getExec()
         int retries = 5
@@ -337,15 +339,14 @@ class Drafter implements Serializable {
         throw new DrafterException("Problem publishing draftset, maximum retries reached while waiting for lock.")
     }
 
-    def getDraftsetEndpoint(String id) {
+    URI getDraftsetEndpoint(String id) {
         String path = "/v1/draftset/${id}/query"
         apiBase.resolve(path)
     }
 
-    def query(String id, String query, Boolean unionWithLive = false,
-              Integer timeout = null, String accept = "application/sparql-results+json") {
+    Collection<Dictionary<String, Object>> query(String id, String query, Boolean unionWithLive, Integer timeout, String accept) {
         URIBuilder uriBuilder = new URIBuilder(getDraftsetEndpoint(id))
-        uriBuilder.setParameter("union-with-live", unionWithLive.toString() )
+        uriBuilder.setParameter("union-with-live", unionWithLive.toString())
         if (timeout != null) {
             uriBuilder.setParameter("timeout", timeout.toString())
         }
@@ -371,4 +372,4 @@ class Drafter implements Serializable {
 }
 
 @InheritConstructors
-class DrafterException extends Exception { }
+class DrafterException extends Exception {}

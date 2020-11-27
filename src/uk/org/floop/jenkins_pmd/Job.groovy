@@ -77,5 +77,4 @@ VALUES ( ?ds ) {
   ${dsValues}
 }""", true).results.bindings.collect { it.graph.value }
     }
-
 }

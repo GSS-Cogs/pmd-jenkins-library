@@ -11,9 +11,7 @@ import com.github.tomakehurst.wiremock.stubbing.Scenario
 import hudson.FilePath
 import org.apache.jena.riot.RDFLanguages
 import org.apache.jena.riot.RDFParser
-import org.apache.jena.riot.lang.StreamRDFCounting
 import org.apache.jena.riot.system.ErrorHandlerFactory
-import org.apache.jena.riot.system.StreamRDFCountingBase
 import org.apache.jena.riot.system.StreamRDFLib
 import org.jenkinsci.lib.configprovider.ConfigProvider
 import org.jenkinsci.plugins.configfiles.ConfigFileStore
@@ -38,7 +36,6 @@ class DrafterTests {
     @ClassRule
     public static WireMockClassRule wireMockRule = new WireMockClassRule(WireMockConfiguration.options()
             .dynamicPort()
-    //.port(8123)
             .usingFilesUnderClasspath("test/resources")
             .notifier(new ConsoleNotifier(true))
     )
@@ -63,31 +60,28 @@ class DrafterTests {
 
     @Before
     void setupConfigFile() {
-        GlobalConfigFiles globalConfigFiles = rule.jenkins
-                .getExtensionList(ConfigFileStore.class)
-                .get(GlobalConfigFiles.class)
-        CustomConfig.CustomConfigProvider configProvider = rule.jenkins
-                .getExtensionList(ConfigProvider.class)
-                .get(CustomConfig.CustomConfigProvider.class)
-        globalConfigFiles.save(
-                new CustomConfig("pmd", "config.json", "Details of endpoint URLs and credentials", """{
-  "pmd_api": "http://localhost:${wireMockRule.port()}",
-  "oauth_token_url": "http://localhost:${oauthWireMockRule.port()}/oauth/token",
-  "oauth_audience": "jenkins",
-  "credentials": "onspmd4",
-  "default_mapping": "https://github.com/ONS-OpenData/ref_trade/raw/master/columns.csv",
-  "base_uri": "http://gss-data.org.uk"
-}""", configProvider.getProviderId()))
+        Helpers.setUpConfigFile(rule, """{
+          "pmd_api": "http://localhost:${wireMockRule.port()}",
+          "oauth_token_url": "http://localhost:${oauthWireMockRule.port()}/oauth/token",
+          "oauth_audience": "jenkins",
+          "credentials": "onspmd4",
+          "default_mapping": "https://github.com/ONS-OpenData/ref_trade/raw/master/columns.csv",
+          "base_uri": "http://gss-data.org.uk"
+        }""")
     }
 
-    @Before
-    void setupCredentials() {
+    public static void setUpCredentials(){
         StandardUsernamePasswordCredentials key = new UsernamePasswordCredentialsImpl(
                 CredentialsScope.GLOBAL,
                 "onspmd4", "Access to PMD APIs",
                 "client_id", "client_secret")
         SystemCredentialsProvider.getInstance().getCredentials().add(key)
         SystemCredentialsProvider.getInstance().save()
+    }
+
+    @Before
+    void setupCredentials() {
+        setUpCredentials()
     }
 
     @Test
