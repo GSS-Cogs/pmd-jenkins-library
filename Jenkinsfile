@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Integration tests') {
             steps {
-                sh './gradlew integrationTest'
+                sh './gradlew integrationTest --tests UtilityTests --tests DrafterTests'
             }
         }
     }
