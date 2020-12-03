@@ -1,0 +1,39 @@
+{
+    "updated-at": "2020-11-20T12:07:23.450Z",
+    "submitted-by": "cogs-jenkins-staging@swirrl.com",
+    "type": "Draftset",
+    "current-owner": "cogs-jenkins-staging@swirrl.com",
+    "created-by": "cogs-jenkins-staging@swirrl.com",
+    "id": "b15b9e34-27a8-4185-a343-81e41210a014",
+    "display-name": "GSS_data/COVID-19/NISRA-Weekly-deaths-Year-NI",
+    "changes": {
+        "http://gss-data.org.uk/graph/gss_data/covid-19/nisra-weekly-deaths-year-ni/occurrences-metadata": {
+            "status": "updated"
+        },
+        "http://gss-data.org.uk/graph/gss_data/covid-19/nisra-weekly-deaths-year-ni/location-of-death": {
+            "status": "updated"
+        },
+        "http://gss-data.org.uk/graph/gss_data/covid-19/nisra-weekly-deaths-year-ni/residential-setting": {
+            "status": "updated"
+        },
+        "http://gss-data.org.uk/graph/gss_data/covid-19/nisra-weekly-deaths-year-ni/occurrences": {
+            "status": "updated"
+        },
+        "http://gss-data.org.uk/graph/gss_data/covid-19/nisra-weekly-deaths-year-ni/age": {
+            "status": "updated"
+        },
+        "http://gss-data.org.uk/graph/gss_data/covid-19/nisra-weekly-deaths-year-ni/cause-of-death": {
+            "status": "updated"
+        },
+        "http://gss-data.org.uk/graph/gss_data/covid-19/nisra-weekly-deaths-year-ni/registrations-metadata": {
+            "status": "updated"
+        },
+        "http://gss-data.org.uk/graph/gss_data/covid-19/nisra-weekly-deaths-year-ni/registered-death-type": {
+            "status": "updated"
+        },
+        "http://gss-data.org.uk/graph/gss_data/covid-19/nisra-weekly-deaths-year-ni/registrations": {
+            "status": "updated"
+        }
+    },
+    "created-at": "2020-11-20T12:06:51.735Z"
+}

@@ -1,0 +1,41 @@
+[
+    {
+        "updated-at": "2020-11-17T19:16:26.881Z",
+        "claim-role": "editor",
+        "submitted-by": "cogs-jenkins-staging@swirrl.com",
+        "type": "Draftset",
+        "created-by": "cogs-jenkins-staging@swirrl.com",
+        "id": "4C7B4255-0F80-4DA1-A14E-105ACE0AB36E",
+        "display-name": "project",
+        "changes": {
+            "http://gss-data.org.uk/graph/gss_data/towns-high-streets/mhclg-english-indices-of-deprivation-2019-metadata": {
+                "status": "updated"
+            },
+            "http://gss-data.org.uk/graph/gss_data/towns-high-streets/mhclg-english-indices-of-deprivation-2019/indices-of-deprivation": {
+                "status": "updated"
+            },
+            "http://gss-data.org.uk/graph/gss_data/towns-high-streets/mhclg-english-indices-of-deprivation-2019": {
+                "status": "updated"
+            }
+        },
+        "created-at": "2020-11-17T17:52:11.777Z"
+    },
+    {
+        "updated-at": "2020-11-18T08:59:12.656Z",
+        "claim-role": "editor",
+        "submitted-by": "cogs-jenkins-staging@swirrl.com",
+        "type": "Draftset",
+        "created-by": "cogs-jenkins-staging@swirrl.com",
+        "id": "6458A88A-5029-444F-B799-90A3EF3B9278",
+        "display-name": "GSS_data/towns-high-streets/BEIS-Lower-and-Middle-Super-Output-Areas-gas-consumption",
+        "changes": {
+            "http://gss-data.org.uk/graph/gss_data/towns-high-streets/beis-lower-and-middle-super-output-areas-gas-consumption-metadata": {
+                "status": "updated"
+            },
+            "http://gss-data.org.uk/graph/gss_data/towns-high-streets/beis-lower-and-middle-super-output-areas-gas-consumption": {
+                "status": "updated"
+            }
+        },
+        "created-at": "2020-11-18T08:41:33.469Z"
+    }
+]
