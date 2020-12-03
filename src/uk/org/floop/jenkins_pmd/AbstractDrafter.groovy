@@ -12,6 +12,7 @@ abstract class AbstractDrafter {
     abstract Dictionary<String, Object> addData(String draftId, String source, String mimeType, String encoding, String graph = null) throws DrafterException
     abstract Dictionary<String, Object> findDraftset(String displayName, Drafter.Include include = Drafter.Include.ALL) throws DrafterException
     abstract Dictionary<String, Object> submitDraftsetTo(String id, Drafter.Role role, String user) throws DrafterException
+    abstract Dictionary<String, Object> claimDraftset(String id) throws DrafterException
     abstract Dictionary<String, Object> publishDraftset(String id) throws DrafterException
     abstract URI getDraftsetEndpoint(String id)
     abstract Collection<Dictionary<String, Object>> query(String id, String query, Boolean unionWithLive = false,

@@ -55,6 +55,11 @@ class MockDrafter extends AbstractDrafter {
     }
 
     @Override
+    Dictionary<String, Object> claimDraftset(String id) throws DrafterException {
+        [:]
+    }
+
+    @Override
     Dictionary<String, Object> publishDraftset(String id) throws DrafterException {
         [:]
     }
