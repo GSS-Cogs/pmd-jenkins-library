@@ -300,7 +300,7 @@ class Drafter extends AbstractDrafter implements Serializable {
         }
     }
 
-    def claimDraftset(String id) {
+    Dictionary<String, Object> claimDraftset(String id) {
         String path = "/v1/draftset/${id}/claim"
         Executor exec = getExec()
         HttpResponse response = exec.execute(
@@ -312,6 +312,7 @@ class Drafter extends AbstractDrafter implements Serializable {
         if (response.getStatusLine().statusCode != 200) {
             throw new DrafterException("Unable to claim draftset ${errorMsg(response)}")
         }
+        return new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
     }
 
     Dictionary<String, Object> publishDraftset(String id) {

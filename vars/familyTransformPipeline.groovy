@@ -173,6 +173,11 @@ def call(body) {
                                 dir(DATASET_DIR) {
                                     def pmd = pmdConfig("pmd")
                                     def drafter = pmd.drafter
+                                    drafter.listDraftsets(Drafter.Include.CLAIMABLE)
+                                            .findAll { it['display-name'] == env.JOB_NAME }
+                                            .each {
+                                                drafter.claimDraftset(it.id)
+                                            }
                                     drafter.listDraftsets(Drafter.Include.OWNED)
                                         .findAll { it['display-name'] == env.JOB_NAME }
                                         .each {
