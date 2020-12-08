@@ -6,6 +6,8 @@ def call(body) {
     body.delegate = pipelineParams
     body()
 
+    def referenceFiles = ["measures", "components", "properties"]
+
     // Designed to work with both family reference CSVs as well as the ref_common reference CSVs.
     pipeline {
         agent {
@@ -30,9 +32,13 @@ def call(body) {
                 steps {
                     script {
                         ansiColor('xterm') {
-                            if (fileExists("measures.csv")) {
-                                // `measures.csv` exists in the root directory of the ref_common repository.
-                                sh "csvlint -s measures.csv-metadata.json"
+                            dir("reference") {
+                                for (def fileName : referenceFiles) {
+                                    if (fileExists("${fileName}.csv")) {
+                                        // `measures.csv` exists in the root directory of the ref_common repository.
+                                        sh "csvlint -s ${fileName}.csv-metadata.json"
+                                    }
+                                }
                             }
                             dir("codelists") {
                                 for (def metadata : findFiles(glob: "*.csv-metadata.json")) {
@@ -54,9 +60,15 @@ def call(body) {
                 steps {
                     script {
                         sh "mkdir -p out/ontologies out/concept-schemes"
-                        if (fileExists("measures.csv")) {
-                            sh "csv2rdf -t 'measures.csv' -u 'measures.csv-metadata.json' -m annotated -o out/ontologies/measures.ttl"
+
+                        dir("reference") {
+                            for (def fileName : referenceFiles) {
+                                if (fileExists("${fileName}.csv")) {
+                                    sh "csv2rdf -t '${fileName}.csv' -u '${fileName}.csv-metadata.json' -m annotated -o ../out/ontologies/${fileName}.ttl"
+                                }
+                            }
                         }
+
                         for (def metadata : findFiles(glob: "codelists/*.csv-metadata.json")) {
                             String baseName = metadata.name.substring(0, metadata.name.lastIndexOf('.csv-metadata.json'))
                             sh "csv2rdf -t 'codelists/${baseName}.csv' -u 'codelists/${metadata.name}' -m annotated > 'out/concept-schemes/${baseName}.ttl'"

@@ -1,0 +1,22 @@
+Namespace,Path,Label,Comment,Source,Parent,Range
+My-favourite-namespace,count,Count,The total number of items,,http://purl.org/linked-data/sdmx/2009/measure#obsValue,xsd:integer
+My-favourite-namespace,cumulative-count,Cumulative Count,The total number of items added to the previous total,,http://purl.org/linked-data/sdmx/2009/measure#obsValue,xsd:integer
+My-favourite-namespace,indicator,Indicator,,,,xsd:decimal
+My-favourite-namespace,standardised-scale,Standardised Scale,,,,xsd:decimal
+My-favourite-namespace,percentage,Percentage,,,,xsd:decimal
+My-favourite-namespace,percent,Percent,,,,xsd:decimal
+My-favourite-namespace,kilowatt,Kilowatt,,,,xsd:decimal
+My-favourite-namespace,weight,Weight,,,,xsd:decimal
+My-favourite-namespace,travel-time,Travel Time,,,,xsd:decimal
+My-favourite-namespace,deprivation,Deprivation,,,,xsd:decimal
+My-favourite-namespace,indices,Indices,,,,xsd:decimal
+My-favourite-namespace,sales,Sales,,,,xsd:decimal
+My-favourite-namespace,mean-consumption,Mean Consumption,In this case mean consumption of electricity,,,xsd:decimal
+My-favourite-namespace,median-consumption,Median Consumption,In this case median consumption of electricity,,,xsd:decimal
+My-favourite-namespace,gdp,Gross Domestic Product,,,,xsd:decimal
+My-favourite-namespace,ranks,Ranks,,,,xsd:integer
+My-favourite-namespace,scores,Scores,,,,xsd:decimal
+My-favourite-namespace,denominators,Denominators,,,,xsd:integer
+My-favourite-namespace,numerators,Numerators,,,,xsd:integer
+My-favourite-namespace,current-prices,Current Prices,,,,xsd:integer
+My-favourite-namespace,proportion,Proportion,,,,xsd:decimal

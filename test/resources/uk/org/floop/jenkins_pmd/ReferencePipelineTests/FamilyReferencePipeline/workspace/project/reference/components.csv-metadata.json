@@ -1,0 +1,77 @@
+{
+  "@context": [
+    "http://www.w3.org/ns/csvw",
+    {
+      "@language": "en"
+    }
+  ],
+  "@id": "#table",
+  "prov:hadDerivation": {
+    "@id": "http://gss-data.org.uk/def/My-first-namespace/ontology/components",
+    "@type": "owl:Ontology",
+    "rdfs:label": "GSS My-first-namespace Components"
+  },
+  "url": "components.csv",
+  "tableSchema": {
+    "columns": [
+      {
+        "titles": "Namespace",
+        "required": true,
+        "name": "namespace",
+        "datatype": "string",
+        "suppressOutput": true
+      },
+      {
+        "titles": "Label",
+        "required": true,
+        "name": "label",
+        "datatype": "string",
+        "propertyUrl": "rdfs:label"
+      },
+      {
+        "titles": "Path",
+        "required": true,
+        "name": "path",
+        "datatype": "string",
+        "suppressOutput": true
+      },
+      {
+        "titles": "Comment",
+        "required": false,
+        "name": "comment",
+        "datatype": "string",
+        "propertyUrl": "rdfs:comment"
+      },
+      {
+        "titles": "Component Type",
+        "required": true,
+        "name": "component_type",
+        "datatype": "anyURI",
+        "suppressOutput": true
+      },
+      {
+        "titles": "Property Uri",
+        "required": true,
+        "name": "property_uri",
+        "datatype": "anyURI",
+        "propertyUrl": "qb:componentProperty",
+        "valueUrl": "{property_uri}"
+      },
+      {
+        "name": "type",
+        "virtual": true,
+        "propertyUrl": "rdf:type",
+        "valueUrl": "http://purl.org/linked-data/cube#ComponentSpecification"
+      },
+      {
+        "virtual": true,
+        "propertyUrl": "{component_type}",
+        "valueUrl": "{property_uri}"
+      }
+    ],
+    "primaryKey": [
+      "path"
+    ],
+    "aboutUrl": "http://gss-data.org.uk/def/measure/{+path}"
+  }
+}
