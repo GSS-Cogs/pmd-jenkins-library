@@ -35,7 +35,6 @@ def call(body) {
                             dir("reference") {
                                 for (def fileName : referenceFiles) {
                                     if (fileExists("${fileName}.csv")) {
-                                        // `measures.csv` exists in the root directory of the ref_common repository.
                                         sh "csvlint -s ${fileName}.csv-metadata.json"
                                     }
                                 }
