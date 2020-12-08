@@ -1,9 +1,0 @@
-Namespace,Label,Path,Comment,Component Type,Property Uri
-My-favourite-namespace,Severity,severity,Severity,qb:dimension,http://gss-data.org.uk/def/dimension/severity
-My-favourite-namespace,Treatment Type,treatment-type,Treatment Type,qb:dimension,http://gss-data.org.uk/def/dimension/treatment-type
-My-favourite-namespace,Trust,trust,NHS trust,qb:dimension,http://gss-data.org.uk/def/dimension/trust
-My-favourite-namespace,Service Type,service-type,Service Type,qb:dimension,http://gss-data.org.uk/def/dimension/service-type
-My-favourite-namespace,Residential Status,residential-status,Residential Status,qb:dimension,http://gss-data.org.uk/def/dimension/residential-status
-My-favourite-namespace,Age,age,"Age group, with older age groups split to reflect traditional UK retirement age for women/men",qb:dimension,http://gss-data.org.uk/def/dimension/age
-My-favourite-namespace,Revision,revision,Indicator for whether the original value has been revised and the cause of revision,qb:dimension,http://gss-data.org.uk/def/dimension/revision
-My-favourite-namespace,Value,value,Value,qb:measure,http://gss-data.org.uk/def/dimension/value

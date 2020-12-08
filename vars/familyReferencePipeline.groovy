@@ -6,7 +6,7 @@ def call(body) {
     body.delegate = pipelineParams
     body()
 
-    def referenceFiles = ["measures", "components", "properties"]
+    def referenceFiles = ["measures", "properties"]
 
     // Designed to work with both family reference CSVs as well as the ref_common reference CSVs.
     pipeline {
@@ -39,10 +39,10 @@ def call(body) {
                                         sh "csvlint -s ${fileName}.csv-metadata.json"
                                     }
                                 }
-                            }
-                            dir("codelists") {
-                                for (def metadata : findFiles(glob: "*.csv-metadata.json")) {
-                                    sh "csvlint -s ${metadata.name}"
+                                dir("codelists") {
+                                    for (def metadata : findFiles(glob: "*.csv-metadata.json")) {
+                                        sh "csvlint -s ${metadata.name}"
+                                    }
                                 }
                             }
                         }
@@ -67,11 +67,12 @@ def call(body) {
                                     sh "csv2rdf -t '${fileName}.csv' -u '${fileName}.csv-metadata.json' -m annotated -o ../out/ontologies/${fileName}.ttl"
                                 }
                             }
-                        }
-
-                        for (def metadata : findFiles(glob: "codelists/*.csv-metadata.json")) {
-                            String baseName = metadata.name.substring(0, metadata.name.lastIndexOf('.csv-metadata.json'))
-                            sh "csv2rdf -t 'codelists/${baseName}.csv' -u 'codelists/${metadata.name}' -m annotated > 'out/concept-schemes/${baseName}.ttl'"
+                            dir("codelists") {
+                                for (def metadata : findFiles(glob: "*.csv-metadata.json")) {
+                                    String baseName = metadata.name.substring(0, metadata.name.lastIndexOf('.csv-metadata.json'))
+                                    sh "csv2rdf -t '${baseName}.csv' -u '${metadata.name}' -m annotated > '../../out/concept-schemes/${baseName}.ttl'"
+                                }
+                            }
                         }
                     }
                 }
