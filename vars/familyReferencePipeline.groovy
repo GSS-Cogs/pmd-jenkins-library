@@ -1,18 +1,30 @@
+import uk.org.floop.jenkins_pmd.Drafter
+
 def call(body) {
     def pipelineParams = [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = pipelineParams
     body()
 
+    def referenceFiles = ["measures", "properties"]
+
+    // Designed to work with both family reference CSVs as well as the ref_common reference CSVs.
     pipeline {
         agent {
             label 'master'
         }
         stages {
+            stage('Clean') {
+                steps {
+                    script {
+                        sh "rm -rf out"
+                    }
+                }
+            }
             stage('Test') {
                 agent {
                     docker {
-                        image 'cloudfluff/csvlint'
+                        image 'gsscogs/csvlint'
                         reuseNode true
                         alwaysPull true
                     }
@@ -20,9 +32,46 @@ def call(body) {
                 steps {
                     script {
                         ansiColor('xterm') {
-                            sh "csvlint -s reference/codelists-metadata.json"
-                            sh "csvlint -s reference/columns.csv-metadata.json"
-                            sh "csvlint -s reference/components.csv-metadata.json"
+                            dir("reference") {
+                                for (def fileName : referenceFiles) {
+                                    if (fileExists("${fileName}.csv")) {
+                                        sh "csvlint -s ${fileName}.csv-metadata.json"
+                                    }
+                                }
+                                dir("codelists") {
+                                    for (def metadata : findFiles(glob: "*.csv-metadata.json")) {
+                                        sh "csvlint -s ${metadata.name}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            stage('Convert to RDF') {
+                agent {
+                    docker {
+                        image 'gsscogs/csv2rdf'
+                        reuseNode true
+                        alwaysPull true
+                    }
+                }
+                steps {
+                    script {
+                        sh "mkdir -p out/ontologies out/concept-schemes"
+
+                        dir("reference") {
+                            for (def fileName : referenceFiles) {
+                                if (fileExists("${fileName}.csv")) {
+                                    sh "csv2rdf -t '${fileName}.csv' -u '${fileName}.csv-metadata.json' -m annotated -o ../out/ontologies/${fileName}.ttl"
+                                }
+                            }
+                            dir("codelists") {
+                                for (def metadata : findFiles(glob: "*.csv-metadata.json")) {
+                                    String baseName = metadata.name.substring(0, metadata.name.lastIndexOf('.csv-metadata.json'))
+                                    sh "csv2rdf -t '${baseName}.csv' -u '${metadata.name}' -m annotated > '../../out/concept-schemes/${baseName}.ttl'"
+                                }
+                            }
                         }
                     }
                 }
@@ -37,56 +86,50 @@ def call(body) {
                 }
                 steps {
                     script {
-                        def pmd = pmdConfig("pmd")
-                        pmd.drafter
-                                .listDraftsets()
-                                .findAll { it['display-name'] == env.JOB_NAME }
-                                .each {
-                                    pmd.drafter.deleteDraftset(it.id)
-                                }
-                        String id = pmd.drafter.createDraftset(env.JOB_NAME).id
-                        def codelists = readJSON(file: 'reference/codelists-metadata.json')
-                        for (def table : codelists['tables']) {
-                            String codelistFilename = table['url']
-                            String label = table['rdfs:label']
-                            pmd.drafter.deleteGraph(id, "${pmd.config.base_uri}/graph/${util.slugise(label)}")
-// TODO: csv2rdf codelist                            pmd.pipelines.codelist(id, "${WORKSPACE}/reference/${codelistFilename}", label)
+                        def pmd = pmdConfig('pmd')
+                        for (myDraft in pmd.drafter
+                                .listDraftsets(Drafter.Include.OWNED)
+                                .findAll { it['display-name'] == env.JOB_NAME }) {
+                            pmd.drafter.deleteDraftset(myDraft.id)
                         }
-                        if (fileExists('reference/components.csv-metadata.json')) {
-                            sh "csv2rdf -t 'reference/components.csv' -u 'reference/components.csv-metadata.json' -m annotated -o components.ttl"
-                            String jobGraph = "${pmd.config.base_uri}/graph/${util.slugise(env.JOB_NAME)}"
-                            pmd.drafter.deleteGraph(id, jobGraph)
-                            pmd.drafter.addData(
-                                    id,
-                                    "${WORKSPACE}/components.ttl",
-                                    "text/turtle",
-                                    "UTF-8",
-                                    jobGraph
-                            )
+                        def id = pmd.drafter.createDraftset(env.JOB_NAME).id
+                        for (graph in util.jobGraphs(pmd, id)) {
+                            pmd.drafter.deleteGraph(id, graph)
+                            echo "Removing own graph ${graph}"
                         }
-                        if (fileExists('reference/components.trig')) {
-                            String trig = readFile('reference/components.trig')
-                            def graphMatch = trig =~ /(?ms)<([^>]+)>\s+\{/
-                            graphMatch.find()
-                            String componentsGraph = graphMatch.group(1)
-                            pmd.drafter.deleteGraph(id, componentsGraph)
-                            pmd.drafter.addData(
-                                    id,
-                                    "${WORKSPACE}/reference/components.trig",
-                                    "application/trig",
-                                    "UTF-8"
-                            )
+                        def uploads = []
+                        writeFile file: "ontgraph.sparql", text: """SELECT ?graph { ?graph a <http://www.w3.org/2002/07/owl#Ontology> }"""
+                        for (def ontology : findFiles(glob: 'out/ontologies/*')) {
+                            sh "sparql --data='${ontology.path}' --query=ontgraph.sparql --results=JSON > 'graph.json'"
+                            uploads.add([
+                                    "path"  : ontology.path,
+                                    "format": "text/turtle",
+                                    "graph" : readJSON(text: readFile(file: "graph.json")).results.bindings[0].graph.value
+                            ])
                         }
+                        writeFile file: "csgraph.sparql", text: """SELECT ?graph { ?graph a <http://www.w3.org/2004/02/skos/core#ConceptScheme> }"""
+                        for (def cs : findFiles(glob: 'out/concept-schemes/*')) {
+                            sh "sparql --data='${cs.path}' --query=csgraph.sparql --results=JSON > 'graph.json'"
+                            uploads.add([
+                                    "path"  : cs.path,
+                                    "format": "text/turtle",
+                                    "graph" : readJSON(text: readFile(file: "graph.json")).results.bindings[0].graph.value
+                            ])
+                        }
+                        for (def upload : uploads) {
+                            pmd.drafter.addData(id, "${WORKSPACE}/${upload.path}", upload.format, "UTF-8", upload.graph)
+                            writeFile(file: "${upload.path}-prov.ttl", text: util.jobPROV(upload.graph))
+                            pmd.drafter.addData(id, "${WORKSPACE}/${upload.path}-prov.ttl", "text/turtle", "UTF-8", upload.graph)
+                        }
+                        pmd.drafter.publishDraftset(id)
                     }
                 }
             }
-            stage('Publish') {
-                steps {
-                    script {
-                        pmd = pmdConfig("pmd")
-                        String draftId = pmd.drafter.findDraftset(env.JOB_NAME).id
-                        pmd.drafter.publishDraftset(draftId)
-                    }
+        }
+        post {
+            always {
+                script {
+                    archiveArtifacts artifacts: "out/"
                 }
             }
         }

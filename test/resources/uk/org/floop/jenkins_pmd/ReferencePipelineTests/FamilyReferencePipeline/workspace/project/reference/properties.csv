@@ -1,0 +1,11 @@
+Namespace,Label,Path,Qb Property Type,Parent Property,Source,Range
+My-favourite-namespace,Period,period,qb:DimensionProperty,http://purl.org/linked-data/sdmx/2009/dimension#refPeriod,http://example.com,http://reference.data.gov.uk/def/intervals/Interval
+My-favourite-namespace,Sex,sex,qb:DimensionProperty,http://purl.org/linked-data/sdmx/2009/dimension#sex,,http://purl.org/linked-data/sdmx/2009/code#Sex
+My-favourite-namespace,Age,age,qb:DimensionProperty,http://purl.org/linked-data/sdmx/2009/dimension#age,,
+My-favourite-namespace,Service Type,Service-type,qb:DimensionProperty,http://gss-data.org.uk/def/dimension/service-type,,
+My-favourite-namespace,Residential Status,Residential-status,qb:AttributeProperty,http://gss-data.org.uk/def/dimension/residential-status,,
+My-favourite-namespace,Treatment Type,Treatment-type,qb:DimensionProperty,http://gss-data.org.uk/def/dimension/treatment-type,,
+My-favourite-namespace,Health and Social Care Trust,Health-and-social-care-trust,qb:DimensionProperty,http://gss-data.org.uk/def/dimension/health-and-social-care-trust,,
+My-favourite-namespace,Trust,trust,qb:DimensionProperty,http://gss-data.org.uk/def/dimension/trust,,
+My-favourite-namespace,Year,year,qb:DimensionProperty,http://purl.org/linked-data/sdmx/2009/dimension#refPeriod,,http://reference.data.gov.uk/def/intervals/Year
+My-favourite-namespace,Severity,severity,qb:DimensionProperty,http://gss-data.org.uk/def/dimension/severity,,

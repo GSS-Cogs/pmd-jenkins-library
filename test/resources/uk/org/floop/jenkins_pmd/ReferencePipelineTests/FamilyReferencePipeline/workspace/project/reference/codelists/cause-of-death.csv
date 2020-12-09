@@ -1,0 +1,4 @@
+Label,Notation,Parent Notation,Sort Priority
+Confirmed COVID-19,confirmed-covid-19,,1
+Suspected COVID-19,suspected-covid-19,,2
+Other Causes,other-causes,,3
