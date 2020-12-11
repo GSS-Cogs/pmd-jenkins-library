@@ -7,6 +7,7 @@ def call(body) {
     body()
 
     def FAILED_STAGE
+    def DATABAKER = pipelineParams['databaker'] ?: 'gsscogs/databaker'
 
     pipeline {
         agent {
@@ -30,7 +31,7 @@ def call(body) {
                     stage('Tidy CSV') {
                         agent {
                             docker {
-                                image 'gsscogs/databaker'
+                                image DATABAKER
                                 reuseNode true
                                 alwaysPull true
                             }
