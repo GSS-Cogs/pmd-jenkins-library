@@ -6,8 +6,11 @@ def call(body) {
     body.delegate = pipelineParams
     body()
 
-    def FAILED_STAGE
-    def DATABAKER = pipelineParams['databaker'] ?: 'gsscogs/databaker'
+    String FAILED_STAGE
+    String DATABAKER = pipelineParams['databaker'] ?: 'gsscogs/databaker'
+    String CSVLINT = pipelineParams['csvlint'] ?: 'gsscogs/csvlint'
+    String CSV2RDF = pipelineParams['csv2rdf'] ?: 'gsscogs/csv2rdf'
+    String SPARQL_TESTS = pipelineParams['sparqltests'] ?: 'gsscogs/gdp-sparql-tests'
 
     pipeline {
         agent {
@@ -53,7 +56,7 @@ def call(body) {
                     stage('Validate CSV') {
                         agent {
                             docker {
-                                image 'gsscogs/csvlint'
+                                image CSVLINT
                                 reuseNode true
                                 alwaysPull true
 
@@ -91,7 +94,7 @@ def call(body) {
                     stage('Data Cube') {
                         agent {
                             docker {
-                                image 'gsscogs/csv2rdf'
+                                image CSV2RDF
                                 reuseNode true
                                 alwaysPull true
                             }
@@ -125,7 +128,7 @@ def call(body) {
                     stage('Local Codelists') {
                         agent {
                             docker {
-                                image 'gsscogs/csv2rdf'
+                                image CSV2RDF
                                 reuseNode true
                                 alwaysPull true
                             }
@@ -263,7 +266,7 @@ def call(body) {
                     stage('Test draft dataset') {
                         agent {
                             docker {
-                                image 'gsscogs/gdp-sparql-tests'
+                                image SPARQL_TESTS
                                 reuseNode true
                                 alwaysPull true
                             }
