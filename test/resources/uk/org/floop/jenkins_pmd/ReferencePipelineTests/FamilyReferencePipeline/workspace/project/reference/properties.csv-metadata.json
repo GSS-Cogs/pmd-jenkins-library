@@ -66,6 +66,13 @@
         "datatype": "anyURI",
         "propertyUrl": "rdfs:range",
         "valueUrl": "{range}"
+      },
+      {
+        "titles": "Comment",
+        "required": false,
+        "name": "comment",
+        "datatype": "string",
+        "propertyUrl": "rdfs:comment"
       }
     ],
     "primaryKey": [
