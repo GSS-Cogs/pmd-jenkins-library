@@ -1,6 +1,8 @@
 import uk.org.floop.jenkins_pmd.ConceptScheme
 import uk.org.floop.jenkins_pmd.Job
 import uk.org.floop.jenkins_pmd.PMD
+import uk.org.floop.jenkins_pmd.SparqlQueries
+import uk.org.floop.jenkins_pmd.SparqlQueries.SparqlQuery
 
 String slugise(String string) {
   string.toLowerCase()
@@ -28,4 +30,8 @@ List<String> referencedGraphs(PMD pmd, String draftId) {
 String conceptSchemeMetadata(String csvFile, String baseURI, String id, String label) {
   def cs = new ConceptScheme(csvFile: csvFile, baseURI: baseURI, id: id, label: label)
   cs.metadata()
+}
+
+String getSparqlQuery(SparqlQuery queryType){
+  SparqlQueries.getSparqlQuery(queryType)
 }

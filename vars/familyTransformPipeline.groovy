@@ -1,4 +1,5 @@
 import uk.org.floop.jenkins_pmd.Drafter
+import uk.org.floop.jenkins_pmd.SparqlQueries
 
 def call(body) {
     def pipelineParams = [:]
@@ -149,8 +150,23 @@ def call(body) {
                                         ])
                                     }
                                     sh "mkdir -p out/codelists"
+
+                                    writeFile file: "skosNarrowerAugmentation.sparql", text: util.getSparqlQuery(SparqlQueries.SparqlQuery.SkosNarrowerAugmentation)
+                                    writeFile file: "skosTopConceptAugmentation.sparql", text: util.getSparqlQuery(SparqlQueries.SparqlQuery.SkosTopConceptAugmentation)
+
                                     for (def codelist : codelists) {
-                                        sh "csv2rdf -t '${codelist.csv}' -u '${codelist.csvw}' -m annotated | pigz > '${codelist.output}.ttl.gz'"
+                                        String outFilePath = "${codelist.output}.ttl"
+                                        sh "csv2rdf -t '${codelist.csv}' -u '${codelist.csvw}' -m annotated > '${outFilePath}'"
+
+                                        // Augment the CodeList hierarchy with skos:Narrower and skos:hasTopConcept
+                                        // annotations. Add the resulting triples on to the end of the .ttl file.
+                                        // These annotations are required to help the PMD 'Reference Data' section
+                                        // function correctly.
+                                        sh "sparql --data='${outFilePath}' --query=skosNarrowerAugmentation.sparql >> '${outFilePath}'"
+                                        sh "sparql --data='${outFilePath}' --query=skosTopConceptAugmentation.sparql >> '${outFilePath}'"
+
+                                        sh "cat '${outFilePath}' | pigz > '${codelist.output}.ttl.gz'"
+                                        sh "rm '${outFilePath}'"
                                     }
                                 }
                             }

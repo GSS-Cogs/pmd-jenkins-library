@@ -1,4 +1,5 @@
 import uk.org.floop.jenkins_pmd.Drafter
+import uk.org.floop.jenkins_pmd.SparqlQueries
 
 def call(body) {
     def pipelineParams = [:]
@@ -67,9 +68,20 @@ def call(body) {
                                 }
                             }
                             dir("codelists") {
+                                writeFile file: "skosNarrowerAugmentation.sparql", text: util.getSparqlQuery(SparqlQueries.SparqlQuery.SkosNarrowerAugmentation)
+                                writeFile file: "skosTopConceptAugmentation.sparql", text: util.getSparqlQuery(SparqlQueries.SparqlQuery.SkosTopConceptAugmentation)
+
                                 for (def metadata : findFiles(glob: "*.csv-metadata.json")) {
                                     String baseName = metadata.name.substring(0, metadata.name.lastIndexOf('.csv-metadata.json'))
-                                    sh "csv2rdf -t '${baseName}.csv' -u '${metadata.name}' -m annotated > '../../out/concept-schemes/${baseName}.ttl'"
+                                    String outFilePath = "../../out/concept-schemes/${baseName}.ttl"
+                                    sh "csv2rdf -t '${baseName}.csv' -u '${metadata.name}' -m annotated > '${outFilePath}'"
+
+                                    // Augment the CodeList hierarchy with skos:Narrower and skos:hasTopConcept
+                                    // annotations. Add the resulting triples on to the end of the .ttl file.
+                                    // These annotations are required to help the PMD 'Reference Data' section
+                                    // function correctly.
+                                    sh "sparql --data='${outFilePath}' --query=skosNarrowerAugmentation.sparql >> '${outFilePath}'"
+                                    sh "sparql --data='${outFilePath}' --query=skosTopConceptAugmentation.sparql >> '${outFilePath}'"
                                 }
                             }
                         }
