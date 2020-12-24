@@ -68,9 +68,20 @@ def call(body) {
                                 }
                             }
                             dir("codelists") {
+                                writeFile file: "skosNarrowerAugmentation.sparql", text: util.getSparqlQuery(SparqlQueries.SparqlQuery.SkosNarrowerAugmentation)
+                                writeFile file: "skosTopConceptAugmentation.sparql", text: util.getSparqlQuery(SparqlQueries.SparqlQuery.SkosTopConceptAugmentation)
+
                                 for (def metadata : findFiles(glob: "*.csv-metadata.json")) {
                                     String baseName = metadata.name.substring(0, metadata.name.lastIndexOf('.csv-metadata.json'))
-                                    sh "csv2rdf -t '${baseName}.csv' -u '${metadata.name}' -m annotated > '../../out/concept-schemes/${baseName}.ttl'"
+                                    String outFilePath = "../../out/concept-schemes/${baseName}.ttl"
+                                    sh "csv2rdf -t '${baseName}.csv' -u '${metadata.name}' -m annotated > '${outFilePath}'"
+
+                                    // Augment the CodeList hierarchy with skos:Narrower and skos:hasTopConcept
+                                    // annotations. Add the resulting triples on to the end of the .ttl file.
+                                    // These annotations are required to help the PMD 'Reference Data' section
+                                    // function correctly.
+                                    sh "sparql --data='${outFilePath}' --query=skosNarrowerAugmentation.sparql >> '${outFilePath}'"
+                                    sh "sparql --data='${outFilePath}' --query=skosTopConceptAugmentation.sparql >> '${outFilePath}'"
                                 }
                             }
                         }
@@ -109,14 +120,8 @@ def call(body) {
                             ])
                         }
                         writeFile file: "csgraph.sparql", text: """SELECT ?graph { ?graph a <http://www.w3.org/2004/02/skos/core#ConceptScheme> }"""
-                        writeFile file: "skosNarrowerAugmentation.sparql", text: util.getSparqlQuery(SparqlQueries.SparqlQuery.SkosNarrowerAugmentation)
-                        writeFile file: "skosTopConceptAugmentation.sparql", text: util.getSparqlQuery(SparqlQueries.SparqlQuery.SkosTopConceptAugmentation)
                         for (def cs : findFiles(glob: 'out/concept-schemes/*')) {
                             sh "sparql --data='${cs.path}' --query=csgraph.sparql --results=JSON > 'graph.json'"
-                            // Augment the CodeList hierarchy with skos:Narrower and skos:hasTopConcept annotations.
-                            // Add the resulting triples on to the end of the .ttl file.
-                            sh "sparql --data='${cs.path}' --query=skosNarrowerAugmentation.sparql >> '${cs.path}'"
-                            sh "sparql --data='${cs.path}' --query=skosTopConceptAugmentation.sparql >> '${cs.path}'"
                             uploads.add([
                                     "path"  : cs.path,
                                     "format": "text/turtle",
