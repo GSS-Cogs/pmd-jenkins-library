@@ -141,7 +141,7 @@ def call(body) {
         post {
             always {
                 script {
-                    archiveArtifacts artifacts: "out/"
+                    archiveArtifacts artifacts: "out/*"
                 }
             }
         }
