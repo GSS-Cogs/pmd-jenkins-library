@@ -359,7 +359,7 @@ def call(body) {
             always {
                 script {
                     def relativeDatasetDir = "datasets/${JOB_BASE_NAME}"
-                    archiveArtifacts artifacts: "${relativeDatasetDir}/out/*", excludes: "${relativeDatasetDir}/out/**/*.html"
+                    archiveArtifacts artifacts: "${relativeDatasetDir}/out/**/*", excludes: "${relativeDatasetDir}/out/**/*.html"
                     if (!Boolean.parseBoolean(env.SUPPRESS_JUNIT)) {
                         junit allowEmptyResults: true, testResults: 'reports/**/*.xml'
                     }
