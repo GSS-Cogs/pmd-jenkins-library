@@ -295,7 +295,7 @@ def call(body) {
                                 String draftId = drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
                                 String endpoint = drafter.getDraftsetEndpoint(draftId)
                                 String dspath = util.slugise(env.JOB_NAME)
-                                def fromGraphs = util.jobGraphs(pmd, draftId) //+ util.referencedGraphs(pmd, draftId)
+                                def fromGraphs = util.jobGraphs(pmd, draftId) + util.referencedGraphs(pmd, draftId)
                                 String fromArgs = fromGraphs.unique().collect { '-f ' + it }.join(' ')
                                 String TOKEN = drafter.getToken()
                                 wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: TOKEN, var: 'TOKEN']]]) {
