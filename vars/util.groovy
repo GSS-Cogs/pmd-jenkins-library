@@ -38,6 +38,6 @@ String getSparqlQuery(SparqlQuery queryType){
   SparqlQueries.getSparqlQuery(queryType)
 }
 
-String getCatalogMetadata(CatalogMetadata metadata){
-  CatalogMetadataHelper.getCatalogMetadata(metadata)
+String getCatalogMetadata(String graph, CatalogMetadata metadata){
+  CatalogMetadataHelper.getCatalogMetadata(graph, metadata)
 }
