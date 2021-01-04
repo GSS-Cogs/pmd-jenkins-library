@@ -3,7 +3,7 @@ import uk.org.floop.jenkins_pmd.ConceptScheme
 import uk.org.floop.jenkins_pmd.Job
 import uk.org.floop.jenkins_pmd.PMD
 import uk.org.floop.jenkins_pmd.SparqlQueries
-import uk.org.floop.jenkins_pmd.SparqlQueries.SparqlQuery
+import uk.org.floop.jenkins_pmd.SparqlQuery
 import uk.org.floop.jenkins_pmd.models.CatalogMetadata
 
 String slugise(String string) {

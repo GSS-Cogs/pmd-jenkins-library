@@ -1,5 +1,5 @@
 import uk.org.floop.jenkins_pmd.Drafter
-import uk.org.floop.jenkins_pmd.SparqlQueries
+import uk.org.floop.jenkins_pmd.SparqlQuery
 
 def call(body) {
     def pipelineParams = [:]
@@ -151,8 +151,8 @@ def call(body) {
                                     }
                                     sh "mkdir -p out/codelists"
 
-                                    writeFile file: "skosNarrowerAugmentation.sparql", text: util.getSparqlQuery(SparqlQueries.SparqlQuery.SkosNarrowerAugmentation)
-                                    writeFile file: "skosTopConceptAugmentation.sparql", text: util.getSparqlQuery(SparqlQueries.SparqlQuery.SkosTopConceptAugmentation)
+                                    writeFile file: "skosNarrowerAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosNarrowerAugmentation)
+                                    writeFile file: "skosTopConceptAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosTopConceptAugmentation)
 
                                     for (def codelist : codelists) {
                                         String outFilePath = "${codelist.output}.ttl"

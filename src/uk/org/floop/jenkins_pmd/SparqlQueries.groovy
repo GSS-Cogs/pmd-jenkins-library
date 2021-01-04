@@ -1,11 +1,6 @@
 package uk.org.floop.jenkins_pmd
 
 class SparqlQueries {
-    enum SparqlQuery {
-        SkosNarrowerAugmentation,
-        SkosTopConceptAugmentation
-    }
-
     static String getSparqlQuery(SparqlQuery queryType){
         switch(queryType){
             case SparqlQuery.SkosNarrowerAugmentation:

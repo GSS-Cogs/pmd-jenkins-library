@@ -1,5 +1,5 @@
 import uk.org.floop.jenkins_pmd.Drafter
-import uk.org.floop.jenkins_pmd.SparqlQueries
+import uk.org.floop.jenkins_pmd.SparqlQuery
 
 def call(body) {
     def pipelineParams = [:]
@@ -68,8 +68,8 @@ def call(body) {
                                 }
                             }
                             dir("codelists") {
-                                writeFile file: "skosNarrowerAugmentation.sparql", text: util.getSparqlQuery(SparqlQueries.SparqlQuery.SkosNarrowerAugmentation)
-                                writeFile file: "skosTopConceptAugmentation.sparql", text: util.getSparqlQuery(SparqlQueries.SparqlQuery.SkosTopConceptAugmentation)
+                                writeFile file: "skosNarrowerAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosNarrowerAugmentation)
+                                writeFile file: "skosTopConceptAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosTopConceptAugmentation)
 
                                 for (def metadata : findFiles(glob: "*.csv-metadata.json")) {
                                     String baseName = metadata.name.substring(0, metadata.name.lastIndexOf('.csv-metadata.json'))
