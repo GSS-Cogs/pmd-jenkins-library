@@ -33,8 +33,8 @@ class CatalogMetadataHelper {
                 pmdcat:datasetContents <${metadata.catalogSchemeUri}>;
                 dc:title "${escapedStringLabel}";
                 rdfs:label "${escapedStringLabel}";
-                dc:issued \\"${metadata.dtIssued}\\"^^<xsd:dateTime>;
-                dc:modified \\"${metadata.dtModified}\\"^^<xsd:dateTime>;
+                dc:issued "${metadata.dtIssued}"^^<xsd:dateTime>;
+                dc:modified "${metadata.dtModified}"^^<xsd:dateTime>;
                 pmdcat:graph <${graph}>.
 
             <${catalogRecordUri}> 
