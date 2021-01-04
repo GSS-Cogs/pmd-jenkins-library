@@ -17,9 +17,10 @@ class CatalogMetadata {
     String markdownDescription
     
     CatalogMetadata(Object jsonObj) {
-        def requiredProperties = ["identifier", "catalogSchemeUri", "catalogUri", "newIdentifierBasePath", "label"]
-        def optionalProperties = ["comment", "dtIssued", "dtModified", "licenseUri", "creatorUri", "publisherUri",
-                                  "contactPointUri", "landingPageUri", "markdownDescription"]
+        def requiredProperties = ["identifier", "catalogSchemeUri", "catalogUri", "newIdentifierBasePath", "label",
+                                  "dtIssued", "dtModified"]
+        def optionalProperties = ["comment",  "licenseUri", "creatorUri", "publisherUri", "contactPointUri",
+                                  "landingPageUri", "markdownDescription"]
 
         for (def prop : requiredProperties) {
             if (jsonObj[prop] == null) {

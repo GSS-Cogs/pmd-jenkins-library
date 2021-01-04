@@ -5,7 +5,7 @@ import uk.org.floop.jenkins_pmd.models.CatalogMetadata
 import java.time.Instant
 
 class CatalogMetadataHelper {
-    static String getCatalogMetadata(CatalogMetadata metadata) {
+    static String getCatalogMetadata(String graph, CatalogMetadata metadata) {
         StringBuilder sb = new StringBuilder("""
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             PREFIX dcat: <http://www.w3.org/ns/dcat#>
@@ -32,15 +32,19 @@ class CatalogMetadataHelper {
                 rdf:type pmdcat:Dataset, dcat:Dataset;
                 pmdcat:datasetContents <${metadata.catalogSchemeUri}>;
                 dc:title "${escapedStringLabel}";
-                rdfs:label "${escapedStringLabel}".
+                rdfs:label "${escapedStringLabel}";
+                dc:issued \\"${metadata.dtIssued}\\"^^<xsd:dateTime>;
+                dc:modified \\"${metadata.dtModified}\\"^^<xsd:dateTime>;
+                pmdcat:graph <${graph}>.
 
             <${catalogRecordUri}> 
                 rdf:type dcat:CatalogRecord;
-                dc:issued: "${dtNow}"^^<xsd:dateTime>;
-                dc:modified: "${dtNow}"^^<xsd:dateTime>;
-                dc:title: "${metadata.label} Catalog Record";
-                rdfs:label "${metadata.label} Catalog Record";
-                foaf:primaryTopic <${datasetUri}>.
+                dc:issued "${dtNow}"^^<xsd:dateTime>;
+                dc:modified "${dtNow}"^^<xsd:dateTime>;
+                dc:title "${escapedStringLabel} Catalog Record";
+                rdfs:label "${escapedStringLabel} Catalog Record";
+                foaf:primaryTopic <${datasetUri}>;
+                pmdcat:metadataGraph <${graph}>.
 
 
             <${metadata.catalogUri}> dcat:record <${catalogRecordUri}>.
@@ -81,14 +85,6 @@ class CatalogMetadataHelper {
 
         if (metadata.landingPageUri != null) {
             optionalDatasetMetadata.add("dcat:landingPage <${metadata.landingPageUri}>")
-        }
-
-        if (metadata.dtIssued != null) {
-            optionalDatasetMetadata.add("dc:issued \"${metadata.dtIssued}\"^^<xsd:dateTime>")
-        }
-
-        if (metadata.dtModified != null) {
-            optionalDatasetMetadata.add("dc:modified \"${metadata.dtModified}\"^^<xsd:dateTime>")
         }
 
         if (metadata.markdownDescription != null) {
