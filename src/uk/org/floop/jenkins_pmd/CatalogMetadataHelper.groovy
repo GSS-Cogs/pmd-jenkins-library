@@ -23,15 +23,16 @@ class CatalogMetadataHelper {
 
         String dtNow = Instant.now().toString()
 
+        String escapedStringLabel = metadata.label.replaceAll("\"", "\\\\\"")
+
         sb.append("""
             <${metadata.catalogSchemeUri}> rdf:type pmdcat:ConceptScheme.
 
             <${datasetUri}> 
                 rdf:type pmdcat:Dataset, dcat:Dataset;
                 pmdcat:datasetContents <${metadata.catalogSchemeUri}>;
-                dc:title "${metadata.label}";
-                rdfs:label "${metadata.label};
-                rdfs:comment "${metadata.comment}.
+                dc:title "${escapedStringLabel}";
+                rdfs:label "${escapedStringLabel}".
 
             <${catalogRecordUri}> 
                 rdf:type dcat:CatalogRecord;
@@ -57,6 +58,11 @@ class CatalogMetadataHelper {
 
     private static String[] buildOptionalMetadata(CatalogMetadata metadata) {
         def optionalDatasetMetadata = []
+        if (metadata.comment != null) {
+            String escapedStringComment = metadata.comment.replaceAll("\"", "\\\\\"")
+            optionalDatasetMetadata.add("rdfs:comment \"${escapedStringComment}\"")
+        }
+
         if (metadata.licenseUri != null) {
             optionalDatasetMetadata.add("dc:license <${metadata.licenseUri}>")
         }
@@ -86,7 +92,8 @@ class CatalogMetadataHelper {
         }
 
         if (metadata.markdownDescription != null) {
-            optionalDatasetMetadata.add("pmdcat:markdownDescription \"${metadata.markdownDescription}\"^^<https://www.w3.org/ns/iana/media-types/text/markdown#Resource>")
+            String escapedStringMarkdown = metadata.markdownDescription.replaceAll("\"", "\\\\\"")
+            optionalDatasetMetadata.add("pmdcat:markdownDescription \"${escapedStringMarkdown}\"^^<https://www.w3.org/ns/iana/media-types/text/markdown#Resource>")
         }
         optionalDatasetMetadata
     }
