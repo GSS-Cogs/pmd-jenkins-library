@@ -154,6 +154,7 @@ def call(body) {
                                     writeFile file: "skosNarrowerAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosNarrowerAugmentation)
                                     writeFile file: "skosTopConceptAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosTopConceptAugmentation)
 
+                                    writeFile file: "graphs.sparql", text: """SELECT ?graph { [] <http://publishmydata.com/pmdcat#graph> ?graph  }"""
                                     for (def codelist : codelists) {
                                         String outFilePath = "${codelist.output}.ttl"
                                         sh "csv2rdf -t '${codelist.csv}' -u '${codelist.csvw}' -m annotated > '${outFilePath}'"
@@ -164,6 +165,8 @@ def call(body) {
                                         // function correctly.
                                         sh "sparql --data='${outFilePath}' --query=skosNarrowerAugmentation.sparql >> '${outFilePath}'"
                                         sh "sparql --data='${outFilePath}' --query=skosTopConceptAugmentation.sparql >> '${outFilePath}'"
+
+                                        sh "sparql --data='${outFilePath}' --query=graphs.sparql --results=JSON > '${codelist.output}-graphs.json'"
 
                                         sh "cat '${outFilePath}' | pigz > '${codelist.output}.ttl.gz'"
                                         sh "rm '${outFilePath}'"
@@ -253,7 +256,13 @@ def call(body) {
                                     }
                                     for (def codelist : findFiles(glob: "out/codelists/*.ttl.gz")) {
                                         String baseName = codelist.name.substring(0, codelist.name.lastIndexOf('.ttl.gz'))
-                                        String codelistGraph = "${pmd.config.base_uri}/graph/${util.slugise(env.JOB_NAME)}/${baseName}"
+
+                                        def graphs = readJSON(text: readFile(file: "out/codelists/${baseName}-graphs.json"))
+                                        String codelistGraph = graphs.results.bindings != null && graphs.results.bindings.any()
+                                                ? graphs.results.bindings[0].graph.value
+                                                // Backwards compatibility for code lists without DCAT/PMDCAT metadata.
+                                                : "${pmd.config.base_uri}/graph/${util.slugise(env.JOB_NAME)}/${baseName}"
+
                                         echo "Adding local codelist ${baseName}"
                                         drafter.addData(
                                                 id,
