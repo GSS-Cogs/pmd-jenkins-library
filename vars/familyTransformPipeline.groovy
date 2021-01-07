@@ -207,6 +207,8 @@ def call(body) {
                                             drafter.deleteDraftset(it.id)
                                         }
                                     String id = drafter.createDraftset(env.JOB_NAME).id
+
+                                    echo "New draftset created at ${env.PMD_DRAFTSET_URI_BASE + id}"
                                     for (graph in util.jobGraphs(pmd, id).unique()) {
                                         echo "Removing own graph ${graph}"
                                         drafter.deleteGraph(id, graph)
@@ -307,10 +309,19 @@ def call(body) {
                                 def fromGraphs = util.jobGraphs(pmd, draftId) + util.referencedGraphs(pmd, draftId)
                                 String fromArgs = fromGraphs.unique().collect { '-f ' + it }.join(' ')
                                 String TOKEN = drafter.getToken()
-                                wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: TOKEN, var: 'TOKEN']]]) {
-                                    sh "sparql-test-runner -t /usr/local/tests/qb -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-qb.xml'"
-                                    sh "sparql-test-runner -t /usr/local/tests/pmd/pmd4 -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-pmd.xml'"
-                                    sh "sparql-test-runner -t /usr/local/tests/skos -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-skos.xml'"
+                                try {
+                                    wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: TOKEN, var: 'TOKEN']]]) {
+                                        sh "sparql-test-runner -t /usr/local/tests/qb -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-qb.xml'"
+                                        sh "sparql-test-runner -t /usr/local/tests/pmd/pmd4 -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-pmd.xml'"
+                                        sh "sparql-test-runner -t /usr/local/tests/skos -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-skos.xml'"
+                                    }
+                                } catch (err) {
+                                    // Ensure we still submit the draftset to editors, so it's still
+                                    echo "SPARQL Test Failure. Still submitting draft to editor to help diagnosis."
+                                    drafter.submitDraftsetTo(draftId, Drafter.Role.EDITOR, null)
+
+                                    // Re-throw the error to stop the build.
+                                    throw err
                                 }
                             }
                         }

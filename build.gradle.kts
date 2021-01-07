@@ -55,6 +55,10 @@ tasks {
     processIntegrationTestResources {
         dependsOn("resolveIntegrationTestDependencies")
     }
+
+    integrationTest {
+        environment("PMD_DRAFTSET_URI_BASE", "https://staging.gss-data.org.uk/admin/drafts/")
+    }
 }
 
 java {
