@@ -43,7 +43,7 @@ String getCatalogMetadata(String graph, CatalogMetadata metadata){
   CatalogMetadataHelper.getCatalogMetadata(graph, metadata)
 }
 
-String getUrlAsTest(String url) {
+String getUrlAsText(String url) {
   Request.Get(url)
     .execute().returnContent().asString()
 }
