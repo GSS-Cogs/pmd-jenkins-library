@@ -5,6 +5,7 @@ import uk.org.floop.jenkins_pmd.PMD
 import uk.org.floop.jenkins_pmd.SparqlQueries
 import uk.org.floop.jenkins_pmd.SparqlQuery
 import uk.org.floop.jenkins_pmd.models.CatalogMetadata
+import org.apache.http.client.fluent.Request
 
 String slugise(String string) {
   string.toLowerCase()
@@ -40,4 +41,9 @@ String getSparqlQuery(SparqlQuery queryType){
 
 String getCatalogMetadata(String graph, CatalogMetadata metadata){
   CatalogMetadataHelper.getCatalogMetadata(graph, metadata)
+}
+
+String getUrlAsTest(String url) {
+  Request.Get(url)
+    .execute().returnContent().asString()
 }
