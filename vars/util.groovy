@@ -46,7 +46,7 @@ String getCatalogMetadata(String graph, CatalogMetadata metadata){
 String getUrlAsText(String url, String acceptMimeType = null) {
   def request = Request.Get(url)
 
-  if (acceptType != null){
+  if (acceptMimeType != null){
     request = request.addHeader('Accept', acceptMimeType)
   }
 
