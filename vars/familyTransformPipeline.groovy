@@ -290,7 +290,7 @@ def call(body) {
             }
             stage('Draft') {
                 stages {
-                    stage('Test draft dataset') {
+                    stage("Run SPARQL Tests on Draftset") {
                         agent {
                             docker {
                                 image SPARQL_TESTS
@@ -301,28 +301,7 @@ def call(body) {
                         steps {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
-                                def pmd = pmdConfig("pmd")
-                                def drafter = pmd.drafter
-                                String draftId = drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
-                                String endpoint = drafter.getDraftsetEndpoint(draftId)
-                                String dspath = util.slugise(env.JOB_NAME)
-                                def fromGraphs = util.jobGraphs(pmd, draftId) + util.referencedGraphs(pmd, draftId)
-                                String fromArgs = fromGraphs.unique().collect { '-f ' + it }.join(' ')
-                                String TOKEN = drafter.getToken()
-                                try {
-                                    wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: TOKEN, var: 'TOKEN']]]) {
-                                        sh "sparql-test-runner -t /usr/local/tests/qb -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-qb.xml'"
-                                        sh "sparql-test-runner -t /usr/local/tests/pmd/pmd4 -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-pmd.xml'"
-                                        sh "sparql-test-runner -t /usr/local/tests/skos -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-skos.xml'"
-                                    }
-                                } catch (err) {
-                                    // Ensure we still submit the draftset to editors, so it's still
-                                    echo "SPARQL Test Failure. Still submitting draft to editor to help diagnosis."
-                                    drafter.submitDraftsetTo(draftId, Drafter.Role.EDITOR, null)
-
-                                    // Re-throw the error to stop the build.
-                                    throw err
-                                }
+                                sparqlTests.run()
                             }
                         }
                     }
@@ -363,10 +342,7 @@ def call(body) {
                                 steps {
                                     script {
                                         FAILED_STAGE = env.STAGE_NAME
-                                        def pmd = pmdConfig("pmd")
-                                        def drafter = pmd.drafter
-                                        String draftId = drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
-                                        drafter.publishDraftset(draftId)
+                                        util.publishDraftset()
                                     }
                                 }
                             }
@@ -380,9 +356,7 @@ def call(body) {
                 script {
                     def relativeDatasetDir = "datasets/${JOB_BASE_NAME}"
                     archiveArtifacts artifacts: "${relativeDatasetDir}/out/**/*", excludes: "${relativeDatasetDir}/out/**/*.html"
-                    if (!Boolean.parseBoolean(env.SUPPRESS_JUNIT)) {
-                        junit allowEmptyResults: true, testResults: 'reports/**/*.xml'
-                    }
+                    outputJUnitResults()
                     publishHTML([
                             allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true,
                             reportDir   : "${relativeDatasetDir}/out", reportFiles: 'main.html',

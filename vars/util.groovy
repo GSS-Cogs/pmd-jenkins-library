@@ -1,5 +1,6 @@
 import uk.org.floop.jenkins_pmd.CatalogMetadataHelper
 import uk.org.floop.jenkins_pmd.ConceptScheme
+import uk.org.floop.jenkins_pmd.Drafter
 import uk.org.floop.jenkins_pmd.Job
 import uk.org.floop.jenkins_pmd.PMD
 import uk.org.floop.jenkins_pmd.SparqlQueries
@@ -51,4 +52,17 @@ String getUrlAsText(String url, String acceptMimeType = null) {
   }
 
   request.execute().returnContent().asString()
+}
+
+void outputJUnitResults() {
+  if (!Boolean.parseBoolean(env.SUPPRESS_JUNIT)) {
+    junit allowEmptyResults: true, testResults: 'reports/**/*.xml'
+  }
+}
+
+void publishDraftset() {
+  def pmd = pmdConfig("pmd")
+  def drafter = pmd.drafter
+  String draftId = drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
+  drafter.publishDraftset(draftId)
 }
