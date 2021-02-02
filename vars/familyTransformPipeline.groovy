@@ -301,7 +301,7 @@ def call(body) {
                         steps {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
-                                runSparqlTests()
+                                sparqlTests.run()
                             }
                         }
                     }
@@ -342,7 +342,7 @@ def call(body) {
                                 steps {
                                     script {
                                         FAILED_STAGE = env.STAGE_NAME
-                                        publishDraftset()
+                                        util.publishDraftset()
                                     }
                                 }
                             }

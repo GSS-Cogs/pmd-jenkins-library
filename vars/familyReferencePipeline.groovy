@@ -1,5 +1,6 @@
 import uk.org.floop.jenkins_pmd.Drafter
 import uk.org.floop.jenkins_pmd.SparqlQuery
+import uk.org.floop.jenkins_pmd.enums.SparqlTestGroup
 
 def call(body) {
     def pipelineParams = [:]
@@ -152,14 +153,15 @@ def call(body) {
                         }
                         steps {
                             script {
-                                runSparqlTests includeGraphsReferencedByDataset: false
+                                sparqlTests.run includeGraphsReferencedByDataset: false,
+                                        testGroups: [SparqlTestGroup.PMD, SparqlTestGroup.SKOS]
                             }
                         }
                     }
                     stage('Publish Draftset') {
                         steps {
                             script {
-                                publishDraftset()
+                                util.publishDraftset()
                             }
                         }
                     }
@@ -170,7 +172,7 @@ def call(body) {
             always {
                 script {
                     archiveArtifacts artifacts: "out/**/*"
-                    outputJUnitResults()
+                    util.outputJUnitResults()
                 }
             }
         }
