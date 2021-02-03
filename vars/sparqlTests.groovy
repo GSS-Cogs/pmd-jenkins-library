@@ -27,7 +27,7 @@ def run(Map config) {
         wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: TOKEN, var: 'TOKEN']]]) {
             for (SparqlTestGroup testGroup in testGroups) {
                 String testDirectoryName = SparqlTestGroup.toDirectoryName(testGroup)
-                sh "sparql-test-runner -t /usr/local/tests/${testDirectoryName} -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-qb.xml'"
+                sh "sparql-test-runner -t /usr/local/tests/${testDirectoryName} -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-${testGroup}.xml'"
             }
         }
     } catch (err) {
