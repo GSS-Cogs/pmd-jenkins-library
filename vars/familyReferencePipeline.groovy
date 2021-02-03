@@ -24,6 +24,7 @@ def call(body) {
                 steps {
                     script {
                         sh "rm -rf out"
+                        sh "rm -rf reports"
                     }
                 }
             }
