@@ -356,7 +356,7 @@ def call(body) {
                 script {
                     def relativeDatasetDir = "datasets/${JOB_BASE_NAME}"
                     archiveArtifacts artifacts: "${relativeDatasetDir}/out/**/*", excludes: "${relativeDatasetDir}/out/**/*.html"
-                    outputJUnitResults()
+                    util.outputJUnitResults()
                     publishHTML([
                             allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true,
                             reportDir   : "${relativeDatasetDir}/out", reportFiles: 'main.html',
