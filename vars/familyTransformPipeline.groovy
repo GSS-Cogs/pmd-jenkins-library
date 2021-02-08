@@ -27,6 +27,7 @@ def call(body) {
                     script {
                         FAILED_STAGE = env.STAGE_NAME
                         sh "rm -rf ${DATASET_DIR}/out"
+                        sh "rm -rf ${DATASET_DIR}/reports"
                     }
                 }
             }
