@@ -154,7 +154,7 @@ def call(body) {
                         }
                         steps {
                             script {
-                                sparqlTests.run includeGraphsReferencedByDataset: false,
+                                sparqlTests.test includeGraphsReferencedByDataset: false,
                                         testGroups: [SparqlTestGroup.PMD, SparqlTestGroup.SKOS]
                             }
                         }

@@ -1,5 +1,6 @@
 import uk.org.floop.jenkins_pmd.Drafter
 import uk.org.floop.jenkins_pmd.SparqlQuery
+import uk.org.floop.jenkins_pmd.enums.SparqlTestGroup
 
 def call(body) {
     def pipelineParams = [:]
@@ -302,7 +303,8 @@ def call(body) {
                         steps {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
-                                sparqlTests.run()
+                                sparqlTests.test()
+                                throw new Exception("What?")
                             }
                         }
                     }
