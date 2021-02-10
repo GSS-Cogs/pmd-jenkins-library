@@ -304,7 +304,6 @@ def call(body) {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
                                 sparqlTests.test()
-                                throw new Exception("What?")
                             }
                         }
                     }
