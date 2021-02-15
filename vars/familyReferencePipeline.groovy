@@ -72,18 +72,28 @@ def call(body) {
                         dir("reference") {
                             def buildActionQueue = []
 
+                            writeFile file: "ontgraph.sparql", text: """SELECT ?graph { ?graph a <http://www.w3.org/2002/07/owl#Ontology> }"""
                             for (def fileName : referenceFiles) {
                                 if (fileExists("${fileName}.csv")) {
+                                    def outputOntoFilePath = "../out/ontologies/${fileName}.ttl"
                                     buildActionQueue.add([
                                         "file": "${fileName}.csv-metadata.json",
                                         "opType": "CSV2RDF",
-                                        "arguments": [ "../out/ontologies/${fileName}.ttl" ]
+                                        "arguments": [ outputOntoFilePath ]
+                                    ])
+                                    // Output the name of the RDF graph we want this to be inserted into as JSON.
+                                    buildActionQueue.add([
+                                            "file": outputOntoFilePath,
+                                            "opType": "SPARQL Query",
+                                            "arguments": [ "ontgraph.sparql", "${outputOntoFilePath}.graph.json" ]
                                     ])
                                 }
                             }
 
                             writeFile file: "skosNarrowerAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosNarrowerAugmentation, true)
                             writeFile file: "skosTopConceptAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosTopConceptAugmentation, true)
+                            writeFile file: "csgraph.sparql", text: """SELECT ?graph { ?graph a <http://www.w3.org/2004/02/skos/core#ConceptScheme> }"""
+
                             dir("codelists") {
                                 for (def metadata : findFiles(glob: "*.csv-metadata.json")) {
                                     String baseName = metadata.name.substring(0, metadata.name.lastIndexOf('.csv-metadata.json'))
@@ -92,6 +102,12 @@ def call(body) {
                                             "file": "codelists/${metadata.name}",
                                             "opType": "CSV2RDF",
                                             "arguments": [ outFilePath ]
+                                    ])
+                                    // Output the name of the RDF graph we want this to be inserted into as JSON.
+                                    buildActionQueue.add([
+                                            "file": outFilePath,
+                                            "opType": "SPARQL Query",
+                                            "arguments": [ "csgraph.sparql", "${outFilePath}.graph.json" ]
                                     ])
 
                                     // Augment the CodeList hierarchy with skos:Narrower and skos:hasTopConcept
@@ -140,22 +156,19 @@ def call(body) {
                                     echo "Removing own graph ${graph}"
                                 }
                                 def uploads = []
-                                writeFile file: "ontgraph.sparql", text: """SELECT ?graph { ?graph a <http://www.w3.org/2002/07/owl#Ontology> }"""
-                                for (def ontology : findFiles(glob: 'out/ontologies/*')) {
-                                    sh "sparql --data='${ontology.path}' --query=ontgraph.sparql --results=JSON > 'graph.json'"
+
+                                for (def ontology : findFiles(glob: 'out/ontologies/*.ttl')) {
                                     uploads.add([
                                             "path"  : ontology.path,
                                             "format": "text/turtle",
-                                            "graph" : readJSON(text: readFile(file: "graph.json")).results.bindings[0].graph.value
+                                            "graph" : readJSON(text: readFile(file: "${ontology.path}.graph.json")).results.bindings[0].graph.value
                                     ])
                                 }
-                                writeFile file: "csgraph.sparql", text: """SELECT ?graph { ?graph a <http://www.w3.org/2004/02/skos/core#ConceptScheme> }"""
-                                for (def cs : findFiles(glob: 'out/concept-schemes/*')) {
-                                    sh "sparql --data='${cs.path}' --query=csgraph.sparql --results=JSON > 'graph.json'"
+                                for (def cs : findFiles(glob: 'out/concept-schemes/*.ttl')) {
                                     uploads.add([
                                             "path"  : cs.path,
                                             "format": "text/turtle",
-                                            "graph" : readJSON(text: readFile(file: "graph.json")).results.bindings[0].graph.value
+                                            "graph" : readJSON(text: readFile(file: "${cs.path}.graph.json")).results.bindings[0].graph.value
                                     ])
                                 }
                                 for (def upload : uploads) {
