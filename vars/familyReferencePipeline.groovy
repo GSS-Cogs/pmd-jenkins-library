@@ -1,3 +1,4 @@
+import groovy.json.JsonOutput
 import uk.org.floop.jenkins_pmd.Drafter
 import uk.org.floop.jenkins_pmd.SparqlQuery
 import uk.org.floop.jenkins_pmd.enums.SparqlTestGroup
@@ -10,6 +11,7 @@ def call(body) {
 
     String CSVLINT = pipelineParams['csvlint'] ?: 'gsscogs/csvlint'
     String CSV2RDF = pipelineParams['csv2rdf'] ?: 'gsscogs/csv2rdf'
+    String GSS_JVM_BUILD_TOOLS = pipelineParams['gssjvmbuildtools'] ?: 'gsscogs/gss-jvm-build-tools'
     String SPARQL_TESTS = pipelineParams['sparqltests'] ?: 'gsscogs/gdp-sparql-tests'
 
     def referenceFiles = ["measures", "properties"]
@@ -58,7 +60,7 @@ def call(body) {
             stage('Convert to RDF') {
                 agent {
                     docker {
-                        image CSV2RDF
+                        image GSS_JVM_BUILD_TOOLS
                         reuseNode true
                         alwaysPull true
                     }
@@ -68,28 +70,48 @@ def call(body) {
                         sh "mkdir -p out/ontologies out/concept-schemes"
 
                         dir("reference") {
+                            def buildActionQueue = []
+
                             for (def fileName : referenceFiles) {
                                 if (fileExists("${fileName}.csv")) {
-                                    sh "csv2rdf -t '${fileName}.csv' -u '${fileName}.csv-metadata.json' -m annotated -o ../out/ontologies/${fileName}.ttl"
+                                    buildActionQueue.add([
+                                        "file": "${fileName}.csv-metadata.json",
+                                        "opType": "CSV2RDF",
+                                        "arguments": [ "../out/ontologies/${fileName}.ttl" ]
+                                    ])
                                 }
                             }
-                            dir("codelists") {
-                                writeFile file: "skosNarrowerAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosNarrowerAugmentation)
-                                writeFile file: "skosTopConceptAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosTopConceptAugmentation)
 
+                            writeFile file: "skosNarrowerAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosNarrowerAugmentation, true)
+                            writeFile file: "skosTopConceptAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosTopConceptAugmentation, true)
+                            dir("codelists") {
                                 for (def metadata : findFiles(glob: "*.csv-metadata.json")) {
                                     String baseName = metadata.name.substring(0, metadata.name.lastIndexOf('.csv-metadata.json'))
-                                    String outFilePath = "../../out/concept-schemes/${baseName}.ttl"
-                                    sh "csv2rdf -t '${baseName}.csv' -u '${metadata.name}' -m annotated > '${outFilePath}'"
+                                    String outFilePath = "../out/concept-schemes/${baseName}.ttl"
+                                    buildActionQueue.add([
+                                            "file": "codelists/${metadata.name}",
+                                            "opType": "CSV2RDF",
+                                            "arguments": [ outFilePath ]
+                                    ])
 
                                     // Augment the CodeList hierarchy with skos:Narrower and skos:hasTopConcept
                                     // annotations. Add the resulting triples on to the end of the .ttl file.
                                     // These annotations are required to help the PMD 'Reference Data' section
                                     // function correctly.
-                                    sh "sparql --data='${outFilePath}' --query=skosNarrowerAugmentation.sparql >> '${outFilePath}'"
-                                    sh "sparql --data='${outFilePath}' --query=skosTopConceptAugmentation.sparql >> '${outFilePath}'"
+                                    buildActionQueue.add([
+                                            "file": outFilePath,
+                                            "opType": "SPARQL Update",
+                                            "arguments": [ "skosNarrowerAugmentation.sparql" ]
+                                    ])
+                                    buildActionQueue.add([
+                                            "file": outFilePath,
+                                            "opType": "SPARQL Update",
+                                            "arguments": [ "skosTopConceptAugmentation.sparql" ]
+                                    ])
                                 }
                             }
+                            writeFile file: "buildActionQueue.json", text: JsonOutput.toJson(buildActionQueue)
+                            sh "gss-jvm-build-tools -c buildActionQueue.json --verbose"
                         }
                     }
                 }

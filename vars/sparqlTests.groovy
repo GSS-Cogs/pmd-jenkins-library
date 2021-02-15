@@ -2,6 +2,10 @@ import uk.org.floop.jenkins_pmd.Drafter
 import uk.org.floop.jenkins_pmd.enums.SparqlTestGroup
 
 def test(Map config = null) {
+    if (Boolean.parseBoolean(env.SUPPRESS_JUNIT)) {
+        return
+    }
+
     boolean includeGraphsReferencedByDataset =
             (config == null || !config.containsKey("includeGraphsReferencedByDataset"))
                     ? true

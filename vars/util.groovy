@@ -36,8 +36,8 @@ String conceptSchemeMetadata(String csvFile, String baseURI, String id, String l
   cs.metadata()
 }
 
-String getSparqlQuery(SparqlQuery queryType){
-  SparqlQueries.getSparqlQuery(queryType)
+String getSparqlQuery(SparqlQuery queryType, boolean insertsRequired = false){
+  SparqlQueries.getSparqlQuery(queryType, insertsRequired)
 }
 
 String getCatalogMetadata(String graph, CatalogMetadata metadata){

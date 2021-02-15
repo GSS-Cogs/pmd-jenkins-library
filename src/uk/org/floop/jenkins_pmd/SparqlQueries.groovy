@@ -1,7 +1,7 @@
 package uk.org.floop.jenkins_pmd
 
 class SparqlQueries {
-    static String getSparqlQuery(SparqlQuery queryType){
+    private static String getRawSparqlQuery(SparqlQuery queryType) {
         switch(queryType){
             case SparqlQuery.SkosNarrowerAugmentation:
                 return skosNarrowerAugmentationQuery
@@ -10,6 +10,16 @@ class SparqlQueries {
             default:
                 throw new IllegalArgumentException("Unmatched SparqlQuery type '${queryType}'")
         }
+    }
+
+    static String getSparqlQuery(SparqlQuery queryType, boolean insertsRequired){
+        def rawSparqlQuery = getRawSparqlQuery(queryType)
+
+        if (insertsRequired) {
+            return rawSparqlQuery.replaceAll("^\\s+CONSTRUCT", "INSERT")
+        }
+
+        return rawSparqlQuery
     }
 
     /**
