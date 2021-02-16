@@ -183,8 +183,7 @@ class Drafter extends AbstractDrafter implements Serializable {
     def waitForJob(URI finishedJob, String restartId) {
         Executor exec = getExec()
         int delay = 1000
-        int doublingRetries = 5
-        // double the delay each time until this many times around, at which point keep the delay (32s)
+
         while (true) {
             HttpResponse jobResponse = exec.execute(
                     Request.Get(finishedJob)
@@ -204,10 +203,6 @@ class Drafter extends AbstractDrafter implements Serializable {
                     throw new DrafterException("Failed waiting for job to finish, no/different restart-id ${errorMsg(jobResponse)}")
                 } else {
                     sleep(delay)
-                    if (doublingRetries > 0) {
-                        delay = delay * 2
-                        doublingRetries = doublingRetries - 1
-                    }
                 }
             } else if (status == 200) {
                 if (jobObj['restart-id'] != restartId) {
