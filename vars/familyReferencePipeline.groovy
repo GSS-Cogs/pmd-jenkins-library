@@ -173,6 +173,8 @@ def call(body) {
                                 def uploads = []
 
                                 def bulkUploadQuadsPath = "out/bulk-upload.nq"
+                                def bulkUploadQuadsZipPath = "out/bulk-upload.nq.tar.gz"
+
                                 sh "echo \"\" > ${bulkUploadQuadsPath}"
                                 for (def ontology : findFiles(glob: 'out/ontologies/*.nq')) {
                                     echo "Bundling ${ontology.path} into ${bulkUploadQuadsPath}"
@@ -182,7 +184,10 @@ def call(body) {
                                     echo "Bundling ${cs.path} into ${bulkUploadQuadsPath}"
                                     sh "cat \"${cs.path}\" >> ${bulkUploadQuadsPath}"
                                 }
-                                pmd.drafter.addData(id, "${WORKSPACE}/${bulkUploadQuadsPath}", "application/n-quads", "UTF-8")
+                                sh "cat ${bulkUploadQuadsPath} | pigz > ${bulkUploadQuadsZipPath}"
+                                echo "Beginning bulk upload to PMD."
+                                pmd.drafter.addData(id, "${WORKSPACE}/${bulkUploadQuadsZipPath}", "application/n-quads", "UTF-8")
+                                echo "Completed bulk upload to PMD."
                             }
                         }
                     }
