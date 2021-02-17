@@ -73,19 +73,28 @@ def call(body) {
                             def buildActionQueue = []
 
                             writeFile file: "ontgraph.sparql", text: """SELECT ?graph { ?graph a <http://www.w3.org/2002/07/owl#Ontology> }"""
+                            writeFile file: "insertAllGraphsProv.sparql", text: util.getSparqlInsertAllGraphsProv()
                             for (def fileName : referenceFiles) {
                                 if (fileExists("${fileName}.csv")) {
-                                    def outputOntoFilePath = "../out/ontologies/${fileName}.ttl"
+                                    def triplesOutFilePath = "../out/ontologies/${fileName}.ttl"
+                                    def quadsOutFilePath = "../out/ontologies/${fileName}.nq"
                                     buildActionQueue.add([
                                         "file": "${fileName}.csv-metadata.json",
                                         "opType": "CSV2RDF",
-                                        "arguments": [ outputOntoFilePath ]
+                                        "arguments": [ triplesOutFilePath ]
                                     ])
-                                    // Output the name of the RDF graph we want this to be inserted into as JSON.
+
+                                    // Convert from triples to quads to enable us to make one upload to PMD at the end.
                                     buildActionQueue.add([
-                                            "file": outputOntoFilePath,
-                                            "opType": "SPARQL Query",
-                                            "arguments": [ "ontgraph.sparql", "${outputOntoFilePath}.graph.json" ]
+                                            "file": triplesOutFilePath,
+                                            "opType": "SPARQL to Quads",
+                                            "arguments": [ "ontgraph.sparql", quadsOutFilePath ]
+                                    ])
+                                    // Add prov info to newly created graph.
+                                    buildActionQueue.add([
+                                            "file": quadsOutFilePath,
+                                            "opType": "SPARQL Update",
+                                            "arguments": [ "insertAllGraphsProv.sparql" ]
                                     ])
                                 }
                             }
@@ -97,32 +106,38 @@ def call(body) {
                             dir("codelists") {
                                 for (def metadata : findFiles(glob: "*.csv-metadata.json")) {
                                     String baseName = metadata.name.substring(0, metadata.name.lastIndexOf('.csv-metadata.json'))
-                                    String outFilePath = "../out/concept-schemes/${baseName}.ttl"
+                                    String triplesOutFilePath = "../out/concept-schemes/${baseName}.ttl"
+                                    String quadsOutFilePath = "../out/concept-schemes/${baseName}.nq"
                                     buildActionQueue.add([
                                             "file": "codelists/${metadata.name}",
                                             "opType": "CSV2RDF",
-                                            "arguments": [ outFilePath ]
+                                            "arguments": [ triplesOutFilePath ]
                                     ])
-                                    // Output the name of the RDF graph we want this to be inserted into as JSON.
-                                    buildActionQueue.add([
-                                            "file": outFilePath,
-                                            "opType": "SPARQL Query",
-                                            "arguments": [ "csgraph.sparql", "${outFilePath}.graph.json" ]
-                                    ])
-
                                     // Augment the CodeList hierarchy with skos:Narrower and skos:hasTopConcept
                                     // annotations. Add the resulting triples on to the end of the .ttl file.
                                     // These annotations are required to help the PMD 'Reference Data' section
                                     // function correctly.
                                     buildActionQueue.add([
-                                            "file": outFilePath,
+                                            "file": triplesOutFilePath,
                                             "opType": "SPARQL Update",
                                             "arguments": [ "skosNarrowerAugmentation.sparql" ]
                                     ])
                                     buildActionQueue.add([
-                                            "file": outFilePath,
+                                            "file": triplesOutFilePath,
                                             "opType": "SPARQL Update",
                                             "arguments": [ "skosTopConceptAugmentation.sparql" ]
+                                    ])
+                                    // Convert from triples to quads to enable us to make one upload to PMD at the end.
+                                    buildActionQueue.add([
+                                            "file": triplesOutFilePath,
+                                            "opType": "SPARQL to Quads",
+                                            "arguments": [ "csgraph.sparql", quadsOutFilePath ]
+                                    ])
+                                    // Add prov info to newly created graph.
+                                    buildActionQueue.add([
+                                            "file": quadsOutFilePath,
+                                            "opType": "SPARQL Update",
+                                            "arguments": [ "insertAllGraphsProv.sparql" ]
                                     ])
                                 }
                             }
@@ -157,25 +172,17 @@ def call(body) {
                                 }
                                 def uploads = []
 
-                                for (def ontology : findFiles(glob: 'out/ontologies/*.ttl')) {
-                                    uploads.add([
-                                            "path"  : ontology.path,
-                                            "format": "text/turtle",
-                                            "graph" : readJSON(text: readFile(file: "${ontology.path}.graph.json")).results.bindings[0].graph.value
-                                    ])
+                                def bulkUploadQuadsPath = "out/bulk-upload.nq"
+                                sh "echo \"\" > ${bulkUploadQuadsPath}"
+                                for (def ontology : findFiles(glob: 'out/ontologies/*.nq')) {
+                                    echo "Bundling ${ontology.path} into ${bulkUploadQuadsPath}"
+                                    sh "cat \"${ontology.path}\" >> ${bulkUploadQuadsPath}"
                                 }
-                                for (def cs : findFiles(glob: 'out/concept-schemes/*.ttl')) {
-                                    uploads.add([
-                                            "path"  : cs.path,
-                                            "format": "text/turtle",
-                                            "graph" : readJSON(text: readFile(file: "${cs.path}.graph.json")).results.bindings[0].graph.value
-                                    ])
+                                for (def cs : findFiles(glob: 'out/concept-schemes/*.nq')) {
+                                    echo "Bundling ${cs.path} into ${bulkUploadQuadsPath}"
+                                    sh "cat \"${cs.path}\" >> ${bulkUploadQuadsPath}"
                                 }
-                                for (def upload : uploads) {
-                                    pmd.drafter.addData(id, "${WORKSPACE}/${upload.path}", upload.format, "UTF-8", upload.graph)
-                                    writeFile(file: "${upload.path}-prov.ttl", text: util.jobPROV(upload.graph))
-                                    pmd.drafter.addData(id, "${WORKSPACE}/${upload.path}-prov.ttl", "text/turtle", "UTF-8", upload.graph)
-                                }
+                                pmd.drafter.addData(id, "${WORKSPACE}/${bulkUploadQuadsPath}", "application/n-quads", "UTF-8")
                             }
                         }
                     }

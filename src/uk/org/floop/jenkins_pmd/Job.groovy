@@ -36,6 +36,36 @@ class Job {
 """
     }
 
+    static String getSparqlInsertAllGraphsProv(RunWrapper build) {
+        String jobId = getID(build)
+        String generatedAt = Instant.ofEpochMilli(build.timeInMillis).toString()
+        return """
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX gdp: <http://gss-data.org.uk/def/gdp#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+INSERT {
+    GRAPH ?g1 {
+        ?g1 prov:wasGeneratedBy <${build.absoluteUrl}> .
+        <${build.absoluteUrl}> a prov:Activity ;
+          prov:wasAssociatedWith <${build.rawBuild.parent.absoluteUrl}> ;
+          prov:generatedAtTime "${generatedAt}"^^xsd:dateTime ;
+          rdfs:label "${build.fullDisplayName}" .
+        <${build.rawBuild.parent.absoluteUrl}> a prov:Agent ;
+          gdp:uniqueID "${jobId}" ;
+          rdfs:label "${build.rawBuild.parent.fullDisplayName}" .
+    }
+}
+WHERE {
+    GRAPH ?g1 {
+        ?s ?p ?o.
+    }
+}
+"""
+    }
+
+
     static List<String> graphs(RunWrapper build, PMD pmd, String draftId) {
         String jobId = getID(build)
         def results = pmd.drafter.query(draftId, """

@@ -27,6 +27,10 @@ String jobPROV(String graph) {
   Job.getPROV(currentBuild, graph)
 }
 
+String getSparqlInsertAllGraphsProv() {
+  Job.getSparqlInsertAllGraphsProv(currentBuild)
+}
+
 List<String> referencedGraphs(PMD pmd, String draftId) {
   Job.referencedGraphs(currentBuild, pmd, draftId)
 }
