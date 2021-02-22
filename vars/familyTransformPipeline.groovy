@@ -198,23 +198,37 @@ def call(body) {
                                 dir(DATASET_DIR) {
                                     def pmd = pmdConfig("pmd")
                                     def drafter = pmd.drafter
+
                                     drafter.listDraftsets(Drafter.Include.CLAIMABLE)
                                             .findAll { it['display-name'] == env.JOB_NAME }
                                             .each {
                                                 drafter.claimDraftset(it.id)
                                             }
                                     drafter.listDraftsets(Drafter.Include.OWNED)
-                                        .findAll { it['display-name'] == env.JOB_NAME }
-                                        .each {
-                                            drafter.deleteDraftset(it.id)
-                                        }
+                                            .findAll { it['display-name'] == env.JOB_NAME }
+                                            .each {
+                                                drafter.deleteDraftset(it.id)
+                                            }
                                     String id = drafter.createDraftset(env.JOB_NAME).id
-
                                     echo "New draftset created at ${env.PMD_DRAFTSET_URI_BASE + id}"
-                                    for (graph in util.jobGraphs(pmd, id).unique()) {
-                                        echo "Removing own graph ${graph}"
-                                        drafter.deleteGraph(id, graph)
+
+                                    def accretiveUpload = false
+                                    def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
+                                    if (info.containsKey('load') && info['load'].containsKey('accretiveUpload')) {
+                                        accretiveUpload = info['load']['accretiveUpload']
                                     }
+
+                                    if (accretiveUpload) {
+                                        echo "Accretive Upload - Not deleting graphs associated with this job. " +
+                                                "New data will be appended."
+                                    } else {
+                                        echo "Replacement Upload - Deleting graphs associated with this job."
+                                        for (graph in util.jobGraphs(pmd, id).unique()) {
+                                            echo "Removing own graph ${graph}"
+                                            drafter.deleteGraph(id, graph)
+                                        }
+                                    }
+
                                     def outputFiles = findFiles(glob: "out/*.ttl.gz")
                                     if (outputFiles.length == 0) {
                                         error(message: "No output RDF files found")
