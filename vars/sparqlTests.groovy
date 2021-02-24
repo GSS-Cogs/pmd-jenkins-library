@@ -32,7 +32,7 @@ def test(Map config = null) {
     String TOKEN = drafter.getToken()
     try {
         wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: TOKEN, var: 'TOKEN']]]) {
-            sh "sparql-test-runner ${testDirArgs} -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}-${testGroup}.xml'"
+            sh "sparql-test-runner ${testDirArgs} -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}.xml'"
         }
     } catch (err) {
         // Ensure we still submit the draftset to editors, so it's still
