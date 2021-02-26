@@ -81,13 +81,12 @@ def call(body) {
                                 ansiColor('xterm') {
                                     def schemas = []
                                     dir("${DATASET_DIR}") {
-                                        dir("out") {
-                                            for (def schema : findFiles(glob: "*-metadata.json")) {
-                                                schemas.add("${schema.name}")
-                                            }
-                                            for (String schema : schemas) {
-                                                sh "csvlint --no-verbose -s ${schema}"
-                                            }
+                                        for (def schema : findFiles(glob: "codelists/*.csv-metadata.json") +
+                                                        findFiles(glob: "out/*-metadata.json")) {
+                                            schemas.add("${schema.path}")
+                                        }
+                                        for (String schema : schemas) {
+                                            sh "csvlint --no-verbose -s ${schema}"
                                         }
                                     }
                                 }
