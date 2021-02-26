@@ -33,14 +33,14 @@ class CatalogMetadataHelper {
                 pmdcat:datasetContents <${metadata.catalogSchemeUri}>;
                 dc:title "${escapedStringLabel}";
                 rdfs:label "${escapedStringLabel}";
-                dc:issued "${metadata.dtIssued}"^^<xsd:dateTime>;
-                dc:modified "${metadata.dtModified}"^^<xsd:dateTime>;
+                dc:issued "${metadata.dtIssued}"^^xsd:dateTime;
+                dc:modified "${metadata.dtModified}"^^xsd:dateTime;
                 pmdcat:graph <${graph}>.
 
             <${catalogRecordUri}> 
                 rdf:type dcat:CatalogRecord;
-                dc:issued "${dtNow}"^^<xsd:dateTime>;
-                dc:modified "${dtNow}"^^<xsd:dateTime>;
+                dc:issued "${dtNow}"^^xsd:dateTime;
+                dc:modified "${dtNow}"^^xsd:dateTime;
                 dc:title "${escapedStringLabel} Catalog Record";
                 rdfs:label "${escapedStringLabel} Catalog Record";
                 foaf:primaryTopic <${datasetUri}>;
