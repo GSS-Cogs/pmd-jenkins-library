@@ -316,7 +316,7 @@ def call(body) {
                         steps {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
-                                sparqlTests.test()
+                                sparqlTests.test ignoreErrors: true
                             }
                         }
                     }

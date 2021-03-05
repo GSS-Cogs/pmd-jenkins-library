@@ -16,6 +16,11 @@ def test(Map config = null) {
                     ? [SparqlTestGroup.PMD, SparqlTestGroup.QB, SparqlTestGroup.SKOS]
                     : config.sparqlTestGroups
 
+    boolean ignoreErrors =
+            (config == null || !config.containsKey("ignoreErrors"))
+                    ? true
+                    : config.ignoreErrors
+
     def pmd = pmdConfig("pmd")
     def drafter = pmd.drafter
     String draftId = drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
@@ -32,7 +37,7 @@ def test(Map config = null) {
     String TOKEN = drafter.getToken()
     try {
         wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: TOKEN, var: 'TOKEN']]]) {
-            sh "sparql-test-runner ${testDirArgs} -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}.xml'"
+            sh "sparql-test-runner ${ignoreErrors ? '-i' : ''} ${testDirArgs} -s '${endpoint}?union-with-live=true&timeout=180' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}.xml'"
         }
     } catch (err) {
         // Ensure we still submit the draftset to editors, so it's still
