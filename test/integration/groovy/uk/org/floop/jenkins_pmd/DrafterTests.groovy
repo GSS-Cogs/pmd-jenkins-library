@@ -66,7 +66,8 @@ class DrafterTests {
           "oauth_audience": "jenkins",
           "credentials": "onspmd4",
           "default_mapping": "https://github.com/ONS-OpenData/ref_trade/raw/master/columns.csv",
-          "base_uri": "http://gss-data.org.uk"
+          "base_uri": "http://gss-data.org.uk",
+          "test_timeout": 180
         }""")
     }
 
