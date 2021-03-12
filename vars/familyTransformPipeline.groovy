@@ -1,8 +1,7 @@
 import uk.org.floop.jenkins_pmd.Drafter
 import uk.org.floop.jenkins_pmd.SparqlQuery
-import uk.org.floop.jenkins_pmd.enums.SparqlTestGroup
 
-def call(body) {
+def call(body, forceReplacementUpload = false) {
     def pipelineParams = [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = pipelineParams
@@ -29,6 +28,18 @@ def call(body) {
                         FAILED_STAGE = env.STAGE_NAME
                         sh "rm -rf ${DATASET_DIR}/out"
                         sh "rm -rf reports"
+
+                        def infoJsonPath = "${DATASET_DIR}/info.json"
+                        def accretiveUpload = false
+                        def info = readJSON(text: readFile(file: infoJsonPath))
+                        if (info.containsKey('load') && info['load'].containsKey('accretiveUpload')) {
+                            accretiveUpload = info['load']['accretiveUpload']
+                        }
+
+                        if (forceReplacementUpload && accretiveUpload) {
+                            info['load']['accretiveUpload'] = false
+                            writeJSON(file: infoJsonPath, json: info, pretty: 4)
+                        }
                     }
                 }
             }
@@ -133,6 +144,17 @@ def call(body) {
                                 image CSV2RDF
                                 reuseNode true
                                 alwaysPull true
+                            }
+                        }
+                        when {
+                            expression {
+                                def accretiveUpload = false
+                                def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
+                                if (info.containsKey('load') && info['load'].containsKey('accretiveUpload')) {
+                                    accretiveUpload = info['load']['accretiveUpload']
+                                }
+
+                                return !accretiveUpload
                             }
                         }
                         steps {
