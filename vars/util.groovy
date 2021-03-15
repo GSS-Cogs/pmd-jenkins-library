@@ -70,3 +70,13 @@ void publishDraftset() {
   String draftId = drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
   drafter.publishDraftset(draftId)
 }
+
+boolean isAccretiveUpload() {
+  def infoJsonPath = "${DATASET_DIR}/info.json"
+  def info = readJSON(text: readFile(file: infoJsonPath))
+  if (info.containsKey('load') && info['load'].containsKey('accretiveUpload')) {
+    return info['load']['accretiveUpload']
+  }
+
+  return false
+}

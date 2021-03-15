@@ -133,7 +133,11 @@ def call(body, forceReplacementUpload = false) {
                                     writeFile file: "graphs.sparql", text: """SELECT ?md ?ds { GRAPH ?md { [] <http://publishmydata.com/pmdcat#graph> ?ds } }"""
                                     for (def dataset : datasets) {
                                         sh "csv2rdf -t '${dataset.csv}' -u '${dataset.csvw}' -m annotated | pigz > '${dataset.output}.ttl.gz'"
-                                        sh "sparql --data='${dataset.metadata}' --query=graphs.sparql --results=JSON > '${dataset.output}-graphs.json'"
+                                        if (!util.isAccretiveUpload()) {
+                                            // .trig file not generated or desired in accretive Upload
+                                            // to avoid duplication of metadata.
+                                            sh "sparql --data='${dataset.metadata}' --query=graphs.sparql --results=JSON > '${dataset.output}-graphs.json'"
+                                        }
                                     }
                                 }
                             }
@@ -149,13 +153,8 @@ def call(body, forceReplacementUpload = false) {
                         }
                         when {
                             expression {
-                                def accretiveUpload = false
-                                def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
-                                if (info.containsKey('load') && info['load'].containsKey('accretiveUpload')) {
-                                    accretiveUpload = info['load']['accretiveUpload']
-                                }
-
-                                return !accretiveUpload
+                                // codelists not generated in accretive Upload to avoid duplication of metadata.
+                                return !util.isAccretiveUpload()
                             }
                         }
                         steps {
@@ -234,13 +233,7 @@ def call(body, forceReplacementUpload = false) {
                                     String id = drafter.createDraftset(env.JOB_NAME).id
                                     echo "New draftset created at ${env.PMD_DRAFTSET_URI_BASE + id}"
 
-                                    def accretiveUpload = false
-                                    def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
-                                    if (info.containsKey('load') && info['load'].containsKey('accretiveUpload')) {
-                                        accretiveUpload = info['load']['accretiveUpload']
-                                    }
-
-                                    if (accretiveUpload) {
+                                    if (util.isAccretiveUpload()) {
                                         echo "Accretive Upload - Not deleting graphs associated with this job. " +
                                                 "New data will be appended."
                                     } else {
@@ -276,15 +269,19 @@ def call(body, forceReplacementUpload = false) {
                                                     "UTF-8",
                                                     datasetGraph
                                             )
-                                            echo "Adding metadata."
-                                            drafter.addData(
-                                                    id,
-                                                    "${DATASET_DIR}/out/${baseName}.csv-metadata.trig",
-                                                    "application/trig",
-                                                    "UTF-8",
-                                                    metadataGraph
-                                            )
-                                            writeFile(file: "out/${baseName}-md-prov.ttl", text: util.jobPROV(metadataGraph))
+                                            if (!util.isAccretiveUpload()) {
+                                                // .trig file not generated or desired in accretive Upload
+                                                // to avoid duplication of metadata.
+                                                echo "Adding metadata."
+                                                drafter.addData(
+                                                        id,
+                                                        "${DATASET_DIR}/out/${baseName}.csv-metadata.trig",
+                                                        "application/trig",
+                                                        "UTF-8",
+                                                        metadataGraph
+                                                )
+                                                writeFile(file: "out/${baseName}-md-prov.ttl", text: util.jobPROV(metadataGraph))
+                                            }
                                             drafter.addData(
                                                     id,
                                                     "${DATASET_DIR}/out/${baseName}-md-prov.ttl",
