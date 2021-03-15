@@ -80,4 +80,33 @@ class PipelineTests {
         assert buildResult.artifacts.any()
     }
 
+
+    @Test(timeout=0l) // Let jUnit know not to apply timeouts here.
+    @LocalData // Find the associated data in test/resources/uk/org/floop/jenkins_pmd/PipelineTests/FamilyPipelineAccretiveUpload
+    @WithTimeout(10000) // Override Jenkins test harness timeout. 180 seconds is not long enough.
+    void "FamilyPipelineAccretiveUpload"() {
+        final CpsFlowDefinition flow = new CpsFlowDefinition('''
+          familyTransformPipeline {
+              databaker = 'gsscogs/databaker:1.3.1'
+          }
+        '''.stripIndent())
+        final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
+
+        final variablesNodeProperty = new EnvironmentVariablesNodeProperty()
+        final envVars = variablesNodeProperty.getEnvVars()
+        // JOB_BASE_NAME must match test data folder structure
+        envVars.put("JOB_BASE_NAME", "TestJob")
+        // jUnit has a nasty habit of setting the build status to 'UNSTABLE' when we need 'SUCCESS'.
+        // Let's just stop running that bit of code until we get a sufficient level of unit tests in this test.
+        envVars.put("SUPPRESS_JUNIT", "true")
+
+        rule.jenkins
+                .getGlobalNodeProperties()
+                .add(variablesNodeProperty);
+
+        workflowJob.definition = flow
+
+        final WorkflowRun buildResult = rule.buildAndAssertSuccess(workflowJob)
+        assert buildResult.artifacts.any()
+    }
 }

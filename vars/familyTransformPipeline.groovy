@@ -131,13 +131,27 @@ def call(body, forceReplacementUpload = false) {
                                         }
                                     }
                                     writeFile file: "graphs.sparql", text: """SELECT ?md ?ds { GRAPH ?md { [] <http://publishmydata.com/pmdcat#graph> ?ds } }"""
+                                    writeFile file: "graphs-accretive.sparql", text: """
+                                        PREFIX qb: <http://purl.org/linked-data/cube#>
+                                        SELECT ?ds { 
+                                            [] 
+                                                a qb:Observation;  
+                                                qb:dataSet ?ds. 
+                                        }
+                                        LIMIT 1
+                                    """
                                     for (def dataset : datasets) {
-                                        sh "csv2rdf -t '${dataset.csv}' -u '${dataset.csvw}' -m annotated | pigz > '${dataset.output}.ttl.gz'"
-                                        if (!util.isAccretiveUpload()) {
+                                        def dataSetTtlOut = "${dataset.output}.ttl"
+                                        sh "csv2rdf -t '${dataset.csv}' -u '${dataset.csvw}' -m annotated > '${dataSetTtlOut}'"
+                                        if (util.isAccretiveUpload()) {
+                                            sh "sparql --data='${dataSetTtlOut}' --query='graphs-accretive.sparql' --results=JSON > '${dataset.output}-graphs.json'"
+                                        } else {
                                             // .trig file not generated or desired in accretive Upload
                                             // to avoid duplication of metadata.
                                             sh "sparql --data='${dataset.metadata}' --query=graphs.sparql --results=JSON > '${dataset.output}-graphs.json'"
                                         }
+                                        sh "cat '${dataSetTtlOut}' | pigz > '${dataset.output}.ttl.gz'"
+                                        sh "rm '${dataSetTtlOut}'"
                                     }
                                 }
                             }
@@ -252,7 +266,6 @@ def call(body, forceReplacementUpload = false) {
                                             String baseName = observations.name.substring(0, observations.name.lastIndexOf('.ttl.gz'))
                                             def graphs = readJSON(text: readFile(file: "out/${baseName}-graphs.json"))
                                             String datasetGraph = graphs.results.bindings[0].ds.value
-                                            String metadataGraph = graphs.results.bindings[0].md.value
                                             echo "Adding ${observations.name}"
                                             drafter.addData(
                                                     id,
@@ -272,6 +285,8 @@ def call(body, forceReplacementUpload = false) {
                                             if (!util.isAccretiveUpload()) {
                                                 // .trig file not generated or desired in accretive Upload
                                                 // to avoid duplication of metadata.
+                                                String metadataGraph = graphs.results.bindings[0].md.value
+
                                                 echo "Adding metadata."
                                                 drafter.addData(
                                                         id,
@@ -281,14 +296,14 @@ def call(body, forceReplacementUpload = false) {
                                                         metadataGraph
                                                 )
                                                 writeFile(file: "out/${baseName}-md-prov.ttl", text: util.jobPROV(metadataGraph))
+                                                drafter.addData(
+                                                        id,
+                                                        "${DATASET_DIR}/out/${baseName}-md-prov.ttl",
+                                                        "text/turtle",
+                                                        "UTF-8",
+                                                        metadataGraph
+                                                )
                                             }
-                                            drafter.addData(
-                                                    id,
-                                                    "${DATASET_DIR}/out/${baseName}-md-prov.ttl",
-                                                    "text/turtle",
-                                                    "UTF-8",
-                                                    metadataGraph
-                                            )
                                         }
                                     }
                                     for (def codelist : findFiles(glob: "out/codelists/*.ttl.gz")) {
