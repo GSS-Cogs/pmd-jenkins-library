@@ -38,6 +38,7 @@ def call(body, forceReplacementUpload = false) {
 
                         if (forceReplacementUpload && accretiveUpload) {
                             info['load']['accretiveUpload'] = false
+                            echo "Forcing replacement upload instead of accretive upload."
                             writeJSON(file: infoJsonPath, json: info, pretty: 4)
                         }
                     }
