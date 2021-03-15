@@ -32,7 +32,7 @@ String getSparqlInsertAllGraphsProv() {
 }
 
 List<String> referencedGraphs(PMD pmd, String draftId) {
-  Job.referencedGraphs(currentBuild, pmd, draftId)
+  Job.referencedGraphs(pmd, draftId, isAccretiveUpload())
 }
 
 String conceptSchemeMetadata(String csvFile, String baseURI, String id, String label) {

@@ -81,14 +81,15 @@ SELECT DISTINCT ?graph WHERE {
         }
     }
 
-    static List<String> referencedGraphs(RunWrapper build, PMD pmd, String draftId) {
-        String jobId = getID(build)
-        List<String> jobGraphs = graphs(build, pmd, draftId).unique()
+    static List<String> referencedGraphs(PMD pmd, String draftId, boolean isAccretiveUpload) {
         def datasets = pmd.drafter.query(draftId, """
-PREFIX qb: <http://purl.org/linked-data/cube#>
-SELECT DISTINCT ?ds WHERE {
-    ?ds a qb:DataSet .
-}""", false).results.bindings.collect { it.ds.value }
+        PREFIX qb: <http://purl.org/linked-data/cube#>
+        SELECT DISTINCT ?ds WHERE {
+            ${isAccretiveUpload
+                ? "[] a qb:Observation; qb:dataSet ?ds."
+                : "?ds a qb:DataSet."}            
+        }
+        """, false).results.bindings.collect { it.ds.value }
         String dsValues = datasets.collect { "( <" + it + "> )" }.join(' ')
         return pmd.drafter.query(draftId, """
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
