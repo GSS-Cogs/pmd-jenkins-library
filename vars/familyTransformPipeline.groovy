@@ -131,7 +131,7 @@ def call(body, forceReplacementUpload = false) {
                                         }
                                     }
                                     writeFile file: "graphs.sparql", text: """SELECT ?md ?ds { GRAPH ?md { [] <http://publishmydata.com/pmdcat#graph> ?ds } }"""
-                                    writeFile file: "graphs-accretive.sparql", text: """
+                                    writeFile file: "dataset-accretive.sparql", text: """
                                         PREFIX qb: <http://purl.org/linked-data/cube#>
                                         SELECT ?ds { 
                                             [] 
@@ -144,7 +144,7 @@ def call(body, forceReplacementUpload = false) {
                                         def dataSetTtlOut = "${dataset.output}.ttl"
                                         sh "csv2rdf -t '${dataset.csv}' -u '${dataset.csvw}' -m annotated > '${dataSetTtlOut}'"
                                         if (util.isAccretiveUpload()) {
-                                            sh "sparql --data='${dataSetTtlOut}' --query='graphs-accretive.sparql' --results=JSON > '${dataset.output}-graphs.json'"
+                                            sh "sparql --data='${dataSetTtlOut}' --query='dataset-accretive.sparql' --results=JSON > '${dataset.output}-dataset-uri.json'"
                                         } else {
                                             // .trig file not generated or desired in accretive Upload
                                             // to avoid duplication of metadata.
@@ -264,30 +264,26 @@ def call(body, forceReplacementUpload = false) {
                                     } else {
                                         for (def observations : outputFiles) {
                                             String baseName = observations.name.substring(0, observations.name.lastIndexOf('.ttl.gz'))
-                                            def graphs = readJSON(text: readFile(file: "out/${baseName}-graphs.json"))
-                                            String datasetGraph = graphs.results.bindings[0].ds.value
-                                            echo "Adding ${observations.name}"
-                                            drafter.addData(
-                                                    id,
-                                                    "${DATASET_DIR}/out/${observations.name}",
-                                                    "text/turtle",
-                                                    "UTF-8",
-                                                    datasetGraph
-                                            )
-                                            writeFile(file: "out/${baseName}-ds-prov.ttl", text: util.jobPROV(datasetGraph))
-                                            drafter.addData(
-                                                    id,
-                                                    "${DATASET_DIR}/out/${baseName}-ds-prov.ttl",
-                                                    "text/turtle",
-                                                    "UTF-8",
-                                                    datasetGraph
-                                            )
-                                            if (!util.isAccretiveUpload()) {
-                                                // .trig file not generated or desired in accretive Upload
-                                                // to avoid duplication of metadata.
+                                            def isAccretiveUpload = util.isAccretiveUpload()
+
+                                            String datasetGraph
+                                            if (isAccretiveUpload) {
+                                                // We don't know what the graph URI should be.
+                                                // Let's find out by querying the data already on live.
+                                                def datasetUri =
+                                                    readJSON(text: readFile(file: "out/${baseName}-dataset-uri.json"))
+                                                        .results.bindings[0].ds.value
+
+                                                datasetGraph = util.getGraphForDataSet(id, datasetUri, true)
+                                                // We don't upload metadataGraph info with accretative uploads.
+                                            } else {
+                                                def graphs = readJSON(text: readFile(file: "out/${baseName}-graphs.json"))
+                                                datasetGraph = graphs.results.bindings[0].ds.value
                                                 String metadataGraph = graphs.results.bindings[0].md.value
 
-                                                echo "Adding metadata."
+                                                // .trig file not generated or desired in accretive Upload
+                                                // to avoid duplication of metadata.
+                                                echo "Adding ${observations.name} metadata."
                                                 drafter.addData(
                                                         id,
                                                         "${DATASET_DIR}/out/${baseName}.csv-metadata.trig",
@@ -304,6 +300,23 @@ def call(body, forceReplacementUpload = false) {
                                                         metadataGraph
                                                 )
                                             }
+
+                                            echo "Adding ${observations.name}"
+                                            drafter.addData(
+                                                    id,
+                                                    "${DATASET_DIR}/out/${observations.name}",
+                                                    "text/turtle",
+                                                    "UTF-8",
+                                                    datasetGraph
+                                            )
+                                            writeFile(file: "out/${baseName}-ds-prov.ttl", text: util.jobPROV(datasetGraph))
+                                            drafter.addData(
+                                                    id,
+                                                    "${DATASET_DIR}/out/${baseName}-ds-prov.ttl",
+                                                    "text/turtle",
+                                                    "UTF-8",
+                                                    datasetGraph
+                                            )
                                         }
                                     }
                                     for (def codelist : findFiles(glob: "out/codelists/*.ttl.gz")) {

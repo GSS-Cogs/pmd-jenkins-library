@@ -340,7 +340,7 @@ class Drafter extends AbstractDrafter implements Serializable {
         apiBase.resolve(path)
     }
 
-    Collection<Dictionary<String, Object>> query(String id, String query, Boolean unionWithLive, Integer timeout, String accept) {
+    Object query(String id, String query, Boolean unionWithLive, Integer timeout, String accept) {
         URIBuilder uriBuilder = new URIBuilder(getDraftsetEndpoint(id))
         uriBuilder.setParameter("union-with-live", unionWithLive.toString())
         if (timeout != null) {

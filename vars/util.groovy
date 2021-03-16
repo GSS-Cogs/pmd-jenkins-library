@@ -80,3 +80,7 @@ boolean isAccretiveUpload() {
 
   return false
 }
+
+String getGraphForDataSet(String draftId, String dataSetUri, boolean unionWithLive) {
+  Job.getGraphForDataSet(pmdConfig("pmd"), draftId, dataSetUri, unionWithLive)
+}

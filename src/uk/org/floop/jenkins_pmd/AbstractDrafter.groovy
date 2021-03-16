@@ -15,7 +15,7 @@ abstract class AbstractDrafter {
     abstract Dictionary<String, Object> claimDraftset(String id) throws DrafterException
     abstract Dictionary<String, Object> publishDraftset(String id) throws DrafterException
     abstract URI getDraftsetEndpoint(String id)
-    abstract Collection<Dictionary<String, Object>> query(String id, String query, Boolean unionWithLive = false,
+    abstract Object query(String id, String query, Boolean unionWithLive = false,
                           Integer timeout = null, String accept = "application/sparql-results+json") throws DrafterException
     abstract String getToken()
 }

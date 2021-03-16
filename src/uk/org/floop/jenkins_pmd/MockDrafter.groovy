@@ -70,9 +70,25 @@ class MockDrafter extends AbstractDrafter {
     }
 
     @Override
-    Collection<Dictionary<String, Object>> query(String id, String query, Boolean unionWithLive,
+    Object query(String id, String query, Boolean unionWithLive,
                                                  Integer timeout, String accept) throws DrafterException {
-        return []
+        def retVal = new Expando()
+        if (query.contains(Job.getGraphForDataSetQueryIdentifier)) {
+            def graph = new Expando()
+            graph.value = "https://gss-data.org.uk/graph/some-graph-uri"
+
+            def binding = new Expando()
+            binding.graph = graph
+
+            def result = new Expando()
+            result.bindings = [binding]
+
+            retVal.results = [result]
+        } else {
+            retVal.results = []
+        }
+
+        return retVal
     }
 
     @Override

@@ -65,6 +65,22 @@ WHERE {
 """
     }
 
+    static String getGraphForDataSetQueryIdentifier = "DataSetUri -> Containing Graph URI"
+    static String getGraphForDataSet(PMD pmd, String draftId, String dataSetUri, boolean unionWithLive) {
+        def response = pmd.drafter.query(draftId, """
+            # ${getGraphForDataSetQueryIdentifier} 
+            PREFIX qb: <http://purl.org/linked-data/cube#>
+
+            SELECT DISTINCT ?graph
+            WHERE {
+                GRAPH ?graph {
+                    <${dataSetUri}> a qb:DataSet.
+                }
+            }    
+        """, unionWithLive)
+
+        return response.results.bindings[0].graph.value
+    }
 
     static List<String> graphs(RunWrapper build, PMD pmd, String draftId) {
         String jobId = getID(build)
