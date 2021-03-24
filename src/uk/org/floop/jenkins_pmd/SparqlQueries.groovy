@@ -75,21 +75,18 @@ WHERE {
 PREFIX qb: <http://purl.org/linked-data/cube#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-CONSTRUCT {
-    ?codelist a skos:ConceptScheme ;
-        skos:hasTopConcept ?time.
-        
-    ?time skos:inScheme ?codelist .
+CONSTRUCT {       
+    ?timeConcept skos:inScheme ?codelist.
 }
 WHERE {
     {
-        SELECT DISTINCT ?codelist ?time
+        SELECT DISTINCT ?codelist ?timeConcept ?conceptLabel
         WHERE {
             ?dimension a qb:DimensionProperty ;
                 rdfs:subPropertyOf <http://purl.org/linked-data/sdmx/2009/dimension#refPeriod> ;
                 qb:codeList ?codelist ;
                 .
-            ?observation ?dimension ?time .
+            ?observation ?dimension ?timeConcept.
         }
     }
 }
