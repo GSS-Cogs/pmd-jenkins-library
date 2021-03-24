@@ -7,6 +7,8 @@ class SparqlQueries {
                 return skosNarrowerAugmentationQuery
             case SparqlQuery.SkosTopConceptAugmentation:
                 return skosTopConceptAugmentationQuery
+            case SparqlQuery.SkosTimeCodelistAugmentationQuery:
+                return skosTimeCodelistAugmentationQuery
             default:
                 throw new IllegalArgumentException("Unmatched SparqlQuery type '${queryType}'")
         }
@@ -62,6 +64,36 @@ WHERE {
             # Ensure we don't add topConcept where it is already set.
             ?conceptScheme <http://www.w3.org/2004/02/skos/core#hasTopConcept> ?concept.
         }
+}
+        """
+
+    /**
+     * Used to put time resources into a ConceptScheme.
+     */
+    private static String skosTimeCodelistAugmentationQuery = """
+PREFIX qb: <http://purl.org/linked-data/cube#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+CONSTRUCT {
+    ?codelist a skos:ConceptScheme ;
+        skos:hasTopConcept ?time ;
+        .
+
+    ?time skos:inScheme ?codelist .
+}
+WHERE {
+    {
+        SELECT DISTINCT ?codelist ?time
+        WHERE {
+            ?dimension a qb:DimensionProperty ;
+                rdfs:subPropertyOf <http://purl.org/linked-data/sdmx/2009/dimension#refPeriod> ;
+                qb:codeList ?codelist ;
+                .
+
+            ?observation ?dimension ?time .
+        }
+    }
 }
         """
 }
