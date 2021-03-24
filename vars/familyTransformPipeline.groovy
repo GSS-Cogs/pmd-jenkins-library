@@ -1,3 +1,4 @@
+import groovy.json.JsonOutput
 import uk.org.floop.jenkins_pmd.Drafter
 import uk.org.floop.jenkins_pmd.SparqlQuery
 
@@ -11,6 +12,7 @@ def call(body, forceReplacementUpload = false) {
     String DATABAKER = pipelineParams['databaker'] ?: 'gsscogs/databaker'
     String CSVLINT = pipelineParams['csvlint'] ?: 'gsscogs/csvlint'
     String CSV2RDF = pipelineParams['csv2rdf'] ?: 'gsscogs/csv2rdf'
+    String GSS_JVM_BUILD_TOOLS = pipelineParams['gssjvmbuildtools'] ?: 'gsscogs/gss-jvm-build-tools'
     String SPARQL_TESTS = pipelineParams['sparqltests'] ?: 'gsscogs/gdp-sparql-tests'
 
     pipeline {
@@ -108,7 +110,7 @@ def call(body, forceReplacementUpload = false) {
                     stage('Data Cube') {
                         agent {
                             docker {
-                                image CSV2RDF
+                                image GSS_JVM_BUILD_TOOLS
                                 reuseNode true
                                 alwaysPull true
                             }
@@ -140,16 +142,46 @@ def call(body, forceReplacementUpload = false) {
                                         }
                                         LIMIT 1
                                     """
+                                    writeFile file: "date-time-code-list-gen.sparql", text: util.getSparqlQuery(SparqlQuery.DateTimeCodeListGeneration, true)
+                                    def buildActionQueue = []
+
                                     for (def dataset : datasets) {
                                         def dataSetTtlOut = "${dataset.output}.ttl"
-                                        sh "csv2rdf -t '${dataset.csv}' -u '${dataset.csvw}' -m annotated > '${dataSetTtlOut}'"
+                                        buildActionQueue.add([
+                                                "file": dataset.csvw,
+                                                "opType": "CSV2RDF",
+                                                "arguments": [ dataSetTtlOut ]
+                                        ])
+
+                                        // Automatically generate codelist values for the datetime dimensions.
+                                        buildActionQueue.add([
+                                                "file": dataSetTtlOut,
+                                                "opType": "SPARQL Update",
+                                                "arguments": [ "date-time-code-list-gen.sparql" ]
+                                        ])
+
                                         if (util.isAccretiveUpload()) {
-                                            sh "sparql --data='${dataSetTtlOut}' --query='dataset-accretive.sparql' --results=JSON > '${dataset.output}-dataset-uri.json'"
+                                            buildActionQueue.add([
+                                                    "file": dataSetTtlOut,
+                                                    "opType": "SPARQL Query",
+                                                    "arguments": [ "dataset-accretive.sparql", "${dataset.output}-dataset-uri.json" ]
+                                            ])
                                         } else {
                                             // .trig file not generated or desired in accretive Upload
                                             // to avoid duplication of metadata.
-                                            sh "sparql --data='${dataset.metadata}' --query=graphs.sparql --results=JSON > '${dataset.output}-graphs.json'"
+                                            buildActionQueue.add([
+                                                    "file": dataset.metadata,
+                                                    "opType": "SPARQL Query",
+                                                    "arguments": [ "graphs.sparql", "${dataset.output}-graphs.json" ]
+                                            ])
                                         }
+                                    }
+
+                                    writeFile file: "buildActionQueue.json", text: JsonOutput.toJson(buildActionQueue)
+                                    sh "gss-jvm-build-tools -c buildActionQueue.json --verbose"
+
+                                    for (def dataset: datasets) {
+                                        def dataSetTtlOut = "${dataset.output}.ttl"
                                         sh "cat '${dataSetTtlOut}' | pigz > '${dataset.output}.ttl.gz'"
                                         sh "rm '${dataSetTtlOut}'"
                                     }

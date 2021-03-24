@@ -2,21 +2,23 @@ package uk.org.floop.jenkins_pmd
 
 class SparqlQueries {
     private static String getRawSparqlQuery(SparqlQuery queryType) {
-        switch(queryType){
+        switch (queryType) {
             case SparqlQuery.SkosNarrowerAugmentation:
                 return skosNarrowerAugmentationQuery
             case SparqlQuery.SkosTopConceptAugmentation:
                 return skosTopConceptAugmentationQuery
+            case SparqlQuery.DateTimeCodeListGeneration:
+                return dateTimeCodeListGenerationQuery
             default:
                 throw new IllegalArgumentException("Unmatched SparqlQuery type '${queryType}'")
         }
     }
 
-    static String getSparqlQuery(SparqlQuery queryType, boolean insertsRequired){
+    static String getSparqlQuery(SparqlQuery queryType, boolean insertsRequired) {
         def rawSparqlQuery = getRawSparqlQuery(queryType)
 
         if (insertsRequired) {
-            return rawSparqlQuery.replaceAll("^\\s+CONSTRUCT", "INSERT")
+            return rawSparqlQuery.replaceAll("\\s+CONSTRUCT\\s+\\{", "\n INSERT {")
         }
 
         return rawSparqlQuery
@@ -64,4 +66,33 @@ WHERE {
         }
 }
         """
+
+
+    /**
+     * Used to put time resources into a ConceptScheme.
+     */
+    private static String dateTimeCodeListGenerationQuery = """
+PREFIX qb: <http://purl.org/linked-data/cube#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+CONSTRUCT {
+    ?codelist a skos:ConceptScheme ;
+        skos:hasTopConcept ?time.
+        
+    ?time skos:inScheme ?codelist .
+}
+WHERE {
+    {
+        SELECT DISTINCT ?codelist ?time
+        WHERE {
+            ?dimension a qb:DimensionProperty ;
+                rdfs:subPropertyOf <http://purl.org/linked-data/sdmx/2009/dimension#refPeriod> ;
+                qb:codeList ?codelist ;
+                .
+            ?observation ?dimension ?time .
+        }
+    }
+}
+        """
+
 }
