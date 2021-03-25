@@ -7,8 +7,8 @@ class SparqlQueries {
                 return skosNarrowerAugmentationQuery
             case SparqlQuery.SkosTopConceptAugmentation:
                 return skosTopConceptAugmentationQuery
-            case SparqlQuery.DateTimeCodeListGeneration:
-                return dateTimeCodeListGenerationQuery
+            case SparqlQuery.DateTimeCodeListConceptGeneration:
+                return dateTimeCodeListConceptGenerationQuery
             default:
                 throw new IllegalArgumentException("Unmatched SparqlQuery type '${queryType}'")
         }
@@ -71,25 +71,39 @@ WHERE {
     /**
      * Used to put time resources into a ConceptScheme.
      */
-    private static String dateTimeCodeListGenerationQuery = """
+    private static String dateTimeCodeListConceptGenerationQuery = """
 PREFIX qb: <http://purl.org/linked-data/cube#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct: <http://purl.org/dc/terms/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
 CONSTRUCT {       
-    ?timeConcept skos:inScheme ?codelist.
+    ?codeList a skos:ConceptScheme;
+              rdfs:label ?codeListLabel;
+              dct:title ?codeListLabel.
+
+    ?timeConcept skos:inScheme ?codeList.
 }
 WHERE {
     {
-        SELECT DISTINCT ?codelist ?timeConcept ?conceptLabel
+        SELECT DISTINCT ?codeList ?timeConcept ?conceptLabel
         WHERE {
             ?dimension a qb:DimensionProperty ;
                 rdfs:subPropertyOf <http://purl.org/linked-data/sdmx/2009/dimension#refPeriod> ;
-                qb:codeList ?codelist ;
-                .
+                qb:codeList ?codeList;
+                rdfs:label ?codeListLabel.
+
             ?observation ?dimension ?timeConcept.
         }
+    } UNION {
+        SELECT DISTINCT ?codeList ?codeListLabel
+        WHERE {
+            ?dimension a qb:DimensionProperty ;
+                rdfs:subPropertyOf <http://purl.org/linked-data/sdmx/2009/dimension#refPeriod> ;
+                qb:codeList ?codeList;
+                rdfs:label ?codeListLabel.
+        }       
     }
 }
         """
-
 }

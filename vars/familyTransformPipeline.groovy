@@ -27,7 +27,7 @@ def call(body, forceReplacementUpload = false) {
             stage('Clean') {
                 steps {
                     script {
-                        FAILED_STAGE = env.STAGE_NAME
+                         FAILED_STAGE = env.STAGE_NAME
                         sh "rm -rf ${DATASET_DIR}/out"
                         sh "rm -rf reports"
 
@@ -200,79 +200,24 @@ def call(body, forceReplacementUpload = false) {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
                                 dir(DATASET_DIR) {
-                                    writeFile file: "date-time-code-list-gen.sparql", text: util.getSparqlQuery(SparqlQuery.DateTimeCodeListGeneration)
+                                    writeFile file: "skosNarrowerAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosNarrowerAugmentation)
+                                    writeFile file: "skosTopConceptAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosTopConceptAugmentation)
+                                    writeFile file: "graphs.sparql", text: """SELECT ?graph { [] <http://publishmydata.com/pmdcat#graph> ?graph  }"""
 
-                                    sh "echo '' > 'datetime-codes.ttl'"
-                                    for (def dataSetTtl : findFiles(glob: "out/*.ttl")) {
-                                        // Automatically generate concepts for all datetime values we have in each dataset.
-                                        sh "sparql --query 'date-time-code-list-gen.sparql' --data '${dataSetTtl}' >> 'datetime-codes.ttl'"
+                                    sh "mkdir -p out/codelists"
+
+                                    def dataSetTtlFiles = findFiles(glob: "out/*.ttl")
+                                    datetimeCodeLists.generate ttlFiles: dataSetTtlFiles, outFolder: "out/codelists"
+
+                                    for (def dataSetTtl : dataSetTtlFiles) {
                                         // We no longer need the ttl file - the data is gzipped up.
                                         sh "rm '${dataSetTtl}'"
                                     }
 
-                                    def codelists = []
-                                    for (def metadata : findFiles(glob: "codelists/*.csv-metadata.json") +
-                                            findFiles(glob: "out/codelists/*.csv-metadata.json")) {
-                                        String baseName = metadata.name.substring(0, metadata.name.lastIndexOf('.csv-metadata.json'))
-                                        String dirName = metadata.path.take(metadata.path.lastIndexOf('/'))
-                                        codelists.add([
-                                                "csv"   : "${dirName}/${baseName}.csv",
-                                                "csvw"  : "${dirName}/${baseName}.csv-metadata.json",
-                                                "output": "out/codelists/${baseName}"
-                                        ])
-                                    }
-                                    sh "mkdir -p out/codelists"
+                                    def csvWMetadataFiles = findFiles(glob: "codelists/*.csv-metadata.json") +
+                                            findFiles(glob: "out/codelists/*.csv-metadata.json")
 
-                                    writeFile file: "skosNarrowerAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosNarrowerAugmentation)
-                                    writeFile file: "skosTopConceptAugmentation.sparql", text: util.getSparqlQuery(SparqlQuery.SkosTopConceptAugmentation)
-
-                                    writeFile file: "graphs.sparql", text: """SELECT ?graph { [] <http://publishmydata.com/pmdcat#graph> ?graph  }"""
-                                    writeFile file: "concept-scheme-uri.sparql", text: """SELECT ?conceptScheme { ?conceptScheme a <http://www.w3.org/2004/02/skos/core#ConceptScheme>.  }"""
-                                    for (def codelist : codelists) {
-                                        String outFilePath = "${codelist.output}.ttl"
-                                        sh "csv2rdf -t '${codelist.csv}' -u '${codelist.csvw}' -m annotated > '${outFilePath}'"
-
-                                        def conceptSchemeUriJsonFile = "${codelist.output}-cs.json"
-                                        sh "sparql --data='${outFilePath}' --query='concept-scheme-uri.sparql' --results=JSON > '${conceptSchemeUriJsonFile}'"
-
-                                        // Pull in any existing datetime Concepts belonging to this ConceptScheme
-                                        // which have been auto-generated.
-                                        def conceptSchemeQueryResult = readJSON(text: readFile(file: conceptSchemeUriJsonFile))
-                                        def conceptSchemeUri = conceptSchemeQueryResult.results.bindings[0].conceptScheme.value
-                                        writeFile file: "construct-datetime-concepts-for-scheme.sparql", text: """
-                                            PREFIX skos:    <http://www.w3.org/2004/02/skos/core#>
-                                            CONSTRUCT {
-                                                ?concept ?p ?o.
-                                            } 
-                                            WHERE {
-                                                {
-                                                    SELECT DISTINCT ?concept ?p ?o
-                                                    WHERE {
-                                                        ?concept skos:inScheme <${conceptSchemeUri}>.
-                                                        
-                                                        # Get all triples related to the concept in this scheme.
-                                                        ?concept ?p ?o.
-                                                    }
-                                                }
-                                            }
-                                        """
-                                        sh "sparql --data 'datetime-codes.ttl' --query 'construct-datetime-concepts-for-scheme.sparql' >> '${outFilePath}'"
-
-                                        // Augment the CodeList hierarchy with skos:Narrower and skos:hasTopConcept
-                                        // annotations. Add the resulting triples on to the end of the .ttl file.
-                                        // These annotations are required to help the PMD 'Reference Data' section
-                                        // function correctly.
-                                        sh "sparql --data='${outFilePath}' --query=skosNarrowerAugmentation.sparql >> '${outFilePath}'"
-                                        sh "sparql --data='${outFilePath}' --query=skosTopConceptAugmentation.sparql >> '${outFilePath}'"
-
-                                        sh "sparql --data='${outFilePath}' --query=graphs.sparql --results=JSON > '${codelist.output}-graphs.json'"
-
-                                        sh "cat '${outFilePath}' | pigz > '${codelist.output}.ttl.gz'"
-                                        sh "rm '${outFilePath}'"
-                                    }
-
-                                    // Don't want anything later in the pipeline to try and upload this data.
-                                    sh "rm 'datetime-codes.ttl'"
+                                    codeLists.convertCsvWsToRdf files: csvWMetadataFiles
                                 }
                             }
                         }
