@@ -205,7 +205,7 @@ def call(body, forceReplacementUpload = false) {
                                     sh "echo '' > 'datetime-codes.ttl'"
                                     for (def dataSetTtl : findFiles(glob: "out/*.ttl")) {
                                         // Automatically generate concepts for all datetime values we have in each dataset.
-                                        "sparql --query 'date-time-code-list-gen.sparql' --data '${dataSetTtl}' >> 'datetime-codes.ttl'"
+                                        sh "sparql --query 'date-time-code-list-gen.sparql' --data '${dataSetTtl}' >> 'datetime-codes.ttl'"
                                         // We no longer need the ttl file - the data is gzipped up.
                                         sh "rm '${dataSetTtl}'"
                                     }
