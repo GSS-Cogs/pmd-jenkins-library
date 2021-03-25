@@ -280,19 +280,26 @@ class Drafter extends AbstractDrafter implements Serializable {
         if (user != null) {
             uriBuilder.setParameter("user", user)
         }
-        HttpResponse response = exec.execute(
-                Request.Post(uriBuilder.build())
-                        .addHeader("Authorization", "Bearer ${token}")
-                        .addHeader("Accept", "application/json")
-                        .userAgent(PMDConfig.UA)
-        ).returnResponse()
-        if (response.getStatusLine().statusCode == 200) {
-            return new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
-        } else if (response.getStatusLine().statusCode == 422) {
-            throw new DrafterException("The submit request could not be processed ${errorMsg(response)}")
-        } else {
-            throw new DrafterException("Problem submitting draftset ${errorMsg(response)}")
+        int retries = 5
+        while (retries > 0) {
+            HttpResponse response = exec.execute(
+                    Request.Post(uriBuilder.build())
+                            .addHeader("Authorization", "Bearer ${token}")
+                            .addHeader("Accept", "application/json")
+                            .userAgent(PMDConfig.UA)
+            ).returnResponse()
+            if (response.getStatusLine().statusCode == 200) {
+                return new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
+            } else if (response.getStatusLine().statusCode == 422) {
+                throw new DrafterException("The submit request could not be processed ${errorMsg(response)}")
+            } else if (response.getStatusLine().statusCode == 503) {
+                waitForLock()
+            } else {
+                throw new DrafterException("Problem submitting draftset ${errorMsg(response)}")
+            }
+            retries = retries - 1
         }
+        throw new DrafterException("Problem submitting draftset, maximum retries reached while waiting for lock.")
     }
 
     Dictionary<String, Object> claimDraftset(String id) {
