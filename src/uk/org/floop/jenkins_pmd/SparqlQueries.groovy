@@ -82,7 +82,8 @@ CONSTRUCT {
               rdfs:label ?codeListLabel;
               dct:title ?codeListLabel.
 
-    ?timeConcept skos:inScheme ?codeList.
+    ?timeConcept a skos:Concept; 
+                 skos:inScheme ?codeList.
 }
 WHERE {
     {
