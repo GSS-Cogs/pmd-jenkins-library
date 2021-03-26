@@ -172,12 +172,13 @@ def call(body, forceReplacementUpload = false) {
                                     writeFile file: "buildActionQueue.json", text: JsonOutput.toJson(buildActionQueue)
                                     sh "gss-jvm-build-tools -c buildActionQueue.json --verbose"
 
+                                    def isAccretiveUpload = util.isAccretiveUpload()
                                     for (def dataset: datasets) {
                                         def dataSetTtlOut = "${dataset.output}.ttl"
 
                                         sh "cat '${dataSetTtlOut}' | pigz > '${dataset.output}.ttl.gz'"
 
-                                        if (util.isAccretiveUpload()) {
+                                        if (isAccretiveUpload) {
                                             sh "rm '${dataSetTtlOut}'"
                                         } // Else, we need to keep the raw ttl file to infer the datetimes codelists in the next stage.
                                     }
