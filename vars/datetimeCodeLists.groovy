@@ -19,6 +19,11 @@ def generate(Map config) {
 
     sh "echo '' > 'datetime-codes.ttl'"
     for (def dataSetTtl : dataSetTtlFilePaths) {
+        def fileSizeBytes = new File(dataSetTtl).length()
+        if (fileSizeBytes > 200e6) {
+            echo "Not generating datetime codes for file '${dataSetTtl}' as size is ${fileSizeBytes} bytes > 200 MB"
+            continue
+        }
         // Automatically generate concepts and basic metadata for all datetime values we have in each dataset.
         sh "sparql --query 'date-time-code-list-gen.sparql' --data '${dataSetTtl}' >> 'datetime-codes.ttl'"
         // One codelist may be spread across multiple files so we need to bring all the concepts together before
