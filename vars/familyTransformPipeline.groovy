@@ -176,7 +176,10 @@ def call(body, forceReplacementUpload = false) {
                                         def dataSetTtlOut = "${dataset.output}.ttl"
 
                                         sh "cat '${dataSetTtlOut}' | pigz > '${dataset.output}.ttl.gz'"
-                                        // Need to keep the raw ttl file to infer the datetimes codelists in the next stage.
+
+                                        if (util.isAccretiveUpload()) {
+                                            sh "rm '${dataSetTtlOut}'"
+                                        } // Else, we need to keep the raw ttl file to infer the datetimes codelists in the next stage.
                                     }
                                 }
                             }
