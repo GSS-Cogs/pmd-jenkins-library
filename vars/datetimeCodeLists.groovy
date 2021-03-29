@@ -1,8 +1,9 @@
+import org.jenkinsci.plugins.pipeline.utility.steps.fs.FileWrapper
 import uk.org.floop.jenkins_pmd.SparqlQuery
 import uk.org.floop.jenkins_pmd.models.CatalogMetadata
 
 def generate(Map config) {
-    String[] dataSetTtlFilePaths = config.get("ttlFiles")
+    FileWrapper[] dataSetTtlFiles = config.get("ttlFiles")
     String outFolderPath = config.get("outFolder")
 
     writeFile file: "date-time-code-list-gen.sparql", text: util.getSparqlQuery(SparqlQuery.DateTimeCodeListConceptGeneration)
@@ -18,8 +19,8 @@ def generate(Map config) {
         }"""
 
     sh "echo '' > 'datetime-codes.ttl'"
-    for (def dataSetTtl : dataSetTtlFilePaths) {
-        def fileSizeBytes = new File(dataSetTtl).length()
+    for (def dataSetTtl : dataSetTtlFiles) {
+        def fileSizeBytes = dataSetTtl.length
         if (fileSizeBytes > 200e6) {
             echo "Not generating datetime codes for file '${dataSetTtl}' as size is ${fileSizeBytes} bytes > 200 MB"
             continue
