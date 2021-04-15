@@ -65,21 +65,33 @@ WHERE {
 """
     }
 
-    static String getGraphForDataSetQueryIdentifier = "DataSetUri -> Containing Graph URI"
-    static String getGraphForDataSet(PMD pmd, String draftId, String dataSetUri, boolean unionWithLive) {
-        def response = pmd.drafter.query(draftId, """
-            # ${getGraphForDataSetQueryIdentifier} 
+    static String catalogEntryGraphLinkId = "DataSetUri -> Construct ?catalogEntry pmdcat:graph ?dataSetGraphUri"
+    static void ensureCatalogEntryGraphLinkExistsForDataSet(PMD pmd, String draftId, String dataSetUri, String[] dataSetGraphUris) {
+        pmd.drafter.query(draftId, """
+            # ${catalogEntryGraphLinkId}
             PREFIX qb: <http://purl.org/linked-data/cube#>
-
-            SELECT DISTINCT ?graph
-            WHERE {
-                GRAPH ?graph {
-                    <${dataSetUri}> a qb:DataSet.
+            PREFIX pmdcat: <http://publishmydata.com/pmdcat#>
+            
+            INSERT {
+              ?catalogEntry pmdcat:graph ?dataSetGraphUri.
+            }
+            WHERE {              
+                BIND(<${dataSetUri}> as ?ds).
+                
+                ?ds a qb:DataSet.
+                    ?catalogEntry pmdcat:datasetContents ?ds
+                
+                VALUES (?dataSetGraphUri) {
+                    ${
+                        dataSetGraphUris.collect({"(<${it}>)"}).join("\n")
+                    }
                 }
-            }    
-        """, unionWithLive)
-
-        return response.results.bindings[0].graph.value
+                
+                  FILTER NOT EXISTS {
+                    ?catalogEntry pmdcat:graph ?dataSetGraphUri.
+                  }
+            } 
+        """)
     }
 
     static List<String> graphs(RunWrapper build, PMD pmd, String draftId) {

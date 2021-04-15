@@ -125,20 +125,35 @@ def call(body, forceReplacementUpload = false) {
                                         if (fileExists("out/${csv.name}-metadata.json")) {
                                             String baseName = csv.name.take(csv.name.lastIndexOf('.'))
                                             datasets.add([
-                                                    "csv"     : "out/${csv.name}",
-                                                    "metadata": "out/${csv.name}-metadata.trig",
-                                                    "csvw"    : "out/${csv.name}-metadata.json",
-                                                    "output"  : "out/${baseName}"
+                                                    "csv"             : "out/${csv.name}",
+                                                    "catalogMetadata" : "out/${csv.name}-metadata.trig",
+                                                    "csvw"            : "out/${csv.name}-metadata.json",
+                                                    "output"          : "out/${baseName}"
                                             ])
                                         }
                                     }
-                                    writeFile file: "graphs.sparql", text: """SELECT ?md ?ds { GRAPH ?md { [] <http://publishmydata.com/pmdcat#graph> ?ds } }"""
-                                    writeFile file: "dataset-accretive.sparql", text: """
+
+                                    writeFile file: "metadata-graph.sparql", text: """
+                                        SELECT ?metadataGraphUri
+                                        { 
+                                            GRAPH ?metadataGraphUri 
+                                            { 
+                                                [] <http://publishmydata.com/pmdcat#graph> [] 
+                                            } }"""
+                                    writeFile file: "dataset-graph.sparql", text: """
+                                        PREFIX sd: <http://www.w3.org/ns/sparql-service-description#>
+                                        
+                                        SELECT ?datasetGraphUri
+                                        WHERE {
+                                          ?datasetGraphUri a sd:NamedGraph.
+                                        }
+                                    """
+                                    writeFile file: "dataset-uri.sparql", text: """
                                         PREFIX qb: <http://purl.org/linked-data/cube#>
-                                        SELECT ?ds { 
+                                        SELECT ?dataSetUri { 
                                             [] 
                                                 a qb:Observation;  
-                                                qb:dataSet ?ds. 
+                                                qb:dataSet ?dataSetUri. 
                                         }
                                         LIMIT 1
                                     """
@@ -152,19 +167,29 @@ def call(body, forceReplacementUpload = false) {
                                                 "arguments": [ dataSetTtlOut ]
                                         ])
 
-                                        if (util.isAccretiveUpload()) {
-                                            buildActionQueue.add([
-                                                    "file": dataSetTtlOut,
-                                                    "opType": "SPARQL Query",
-                                                    "arguments": [ "dataset-accretive.sparql", "${dataset.output}-dataset-uri.json" ]
-                                            ])
-                                        } else {
+
+                                        buildActionQueue.add([
+                                                "file": dataSetTtlOut,
+                                                "opType": "SPARQL Query",
+                                                "arguments": [ "metadata-graph.sparql",
+                                                               "${dataset.output}-metadata-graph.json" ]
+                                        ])
+
+                                        buildActionQueue.add([
+                                                "file": dataSetTtlOut,
+                                                "opType": "SPARQL Query",
+                                                "arguments": [ "dataset-uri.sparql",
+                                                               "${dataset.output}-dataset-uri.json" ]
+                                        ])
+
+                                        if (!util.accretiveUpload()) {
                                             // .trig file not generated or desired in accretive Upload
                                             // to avoid duplication of metadata.
                                             buildActionQueue.add([
-                                                    "file": dataset.metadata,
-                                                    "opType": "SPARQL Query",
-                                                    "arguments": [ "graphs.sparql", "${dataset.output}-graphs.json" ]
+                                                    "file"     : dataset.catalogMetadata,
+                                                    "opType"   : "SPARQL Query",
+                                                    "arguments": ["dataset-graph.sparql",
+                                                                  "${dataset.output}-dataset-graph.json"]
                                             ])
                                         }
                                     }
@@ -280,20 +305,15 @@ def call(body, forceReplacementUpload = false) {
                                             String baseName = observations.name.substring(0, observations.name.lastIndexOf('.ttl.gz'))
                                             def isAccretiveUpload = util.isAccretiveUpload()
 
-                                            String datasetGraph
-                                            if (isAccretiveUpload) {
-                                                // We don't know what the graph URI should be.
-                                                // Let's find out by querying the data already on live.
-                                                def datasetUri =
-                                                    readJSON(text: readFile(file: "out/${baseName}-dataset-uri.json"))
-                                                        .results.bindings[0].ds.value
 
-                                                datasetGraph = util.getGraphForDataSet(id, datasetUri, true)
-                                                // We don't upload metadataGraph info with accretative uploads.
-                                            } else {
-                                                def graphs = readJSON(text: readFile(file: "out/${baseName}-graphs.json"))
-                                                datasetGraph = graphs.results.bindings[0].ds.value
-                                                String metadataGraph = graphs.results.bindings[0].md.value
+                                            def datasetGraphUriJson = readJSON(text: readFile(file: "out/${baseName}-dataset-graph.json"))
+                                            def datasetGraph = datasetGraphUriJson.results.bindings[0].datasetGraphUri.value
+                                            def datasetUriJson = readJSON(text: readFile(file: "out/${baseName}-dataset-uri.json"))
+                                            def datasetUri = datasetUriJson.results.bindings[0].datasetUri.value
+
+                                            if (!isAccretiveUpload) {
+                                                def metadataGraphUriJson = readJSON(text: readFile(file: "out/${baseName}-metadata-graph.json"))
+                                                String metadataGraph = metadataGraphUriJson.results.bindings[0].metadataGraphUri.value
 
                                                 // .trig file not generated or desired in accretive Upload
                                                 // to avoid duplication of metadata.
@@ -331,6 +351,9 @@ def call(body, forceReplacementUpload = false) {
                                                     "UTF-8",
                                                     datasetGraph
                                             )
+
+                                            utils.ensureCatalogEntryGraphLinkExistsForDataSet(id, datasetUri,
+                                                                                              [datasetGraph])
                                         }
                                     }
                                     for (def codelist : findFiles(glob: "out/codelists/*.ttl.gz")) {
