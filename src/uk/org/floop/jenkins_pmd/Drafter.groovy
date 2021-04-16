@@ -373,6 +373,7 @@ class Drafter extends AbstractDrafter implements Serializable {
     }
 
     void update(String draftId, String query, Integer timeout = null) {
+        echo query
         URIBuilder uriBuilder = new URIBuilder(getDraftsetEndpoint(draftId, "update"))
         if (timeout != null) {
             uriBuilder.setParameter("timeout", timeout.toString())
