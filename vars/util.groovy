@@ -84,6 +84,6 @@ boolean isAccretiveUpload() {
 String ensureCatalogEntryGraphLinkExistsForDataSet(Map config) {
   String draftId = config.get("draftId")
   String dataSetUri = config.get("dataSetUri")
-  String[] dataSetGraphUris = config.get("dataSetGraphUris")
+  String[] dataSetGraphUris = config.get("expectedGraphs")
   Job.ensureCatalogEntryGraphLinkExistsForDataSet(pmdConfig("pmd"), draftId, dataSetUri, dataSetGraphUris)
 }
