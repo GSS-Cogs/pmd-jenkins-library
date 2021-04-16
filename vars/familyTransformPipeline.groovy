@@ -118,6 +118,8 @@ def call(body, forceReplacementUpload = false) {
                         steps {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
+                                def isAccretiveUpload = util.isAccretiveUpload()
+
                                 dir(DATASET_DIR) {
                                     def datasets = []
 
@@ -150,10 +152,10 @@ def call(body, forceReplacementUpload = false) {
                                     """
                                     writeFile file: "dataset-uri.sparql", text: """
                                         PREFIX qb: <http://purl.org/linked-data/cube#>
-                                        SELECT ?dataSetUri { 
+                                        SELECT ?datasetUri { 
                                             [] 
                                                 a qb:Observation;  
-                                                qb:dataSet ?dataSetUri. 
+                                                qb:dataSet ?datasetUri. 
                                         }
                                         LIMIT 1
                                     """
@@ -170,9 +172,9 @@ def call(body, forceReplacementUpload = false) {
 
                                         buildActionQueue.add([
                                                 "file": dataSetTtlOut,
-                                                "opType": "SPARQL Query",
-                                                "arguments": [ "metadata-graph.sparql",
-                                                               "${dataset.output}-metadata-graph.json" ]
+                                                "opType"   : "SPARQL Query",
+                                                "arguments": ["dataset-graph.sparql",
+                                                              "${dataset.output}-dataset-graph.json"]
                                         ])
 
                                         buildActionQueue.add([
@@ -182,14 +184,14 @@ def call(body, forceReplacementUpload = false) {
                                                                "${dataset.output}-dataset-uri.json" ]
                                         ])
 
-                                        if (!util.accretiveUpload()) {
+                                        if (!isAccretiveUpload) {
                                             // .trig file not generated or desired in accretive Upload
                                             // to avoid duplication of metadata.
                                             buildActionQueue.add([
                                                     "file"     : dataset.catalogMetadata,
                                                     "opType"   : "SPARQL Query",
-                                                    "arguments": ["dataset-graph.sparql",
-                                                                  "${dataset.output}-dataset-graph.json"]
+                                                    "arguments": [ "metadata-graph.sparql",
+                                                                   "${dataset.output}-metadata-graph.json" ]
                                             ])
                                         }
                                     }
@@ -197,7 +199,6 @@ def call(body, forceReplacementUpload = false) {
                                     writeFile file: "buildActionQueue.json", text: JsonOutput.toJson(buildActionQueue)
                                     sh "gss-jvm-build-tools -c buildActionQueue.json --verbose"
 
-                                    def isAccretiveUpload = util.isAccretiveUpload()
                                     for (def dataset: datasets) {
                                         def dataSetTtlOut = "${dataset.output}.ttl"
 
@@ -352,8 +353,11 @@ def call(body, forceReplacementUpload = false) {
                                                     datasetGraph
                                             )
 
-                                            utils.ensureCatalogEntryGraphLinkExistsForDataSet(id, datasetUri,
-                                                                                              [datasetGraph])
+                                            def expectedGraphs = [datasetGraph]
+                                            echo "Linking expected graphs ${expectedGraphs.join(", ")} to dataset ${datasetUri}"
+                                            util.ensureCatalogEntryGraphLinkExistsForDataSet draftId: id,
+                                                                                             dataSetUri: datasetUri,
+                                                                                             expectedGraphs: expectedGraphs
                                         }
                                     }
                                     for (def codelist : findFiles(glob: "out/codelists/*.ttl.gz")) {

@@ -56,9 +56,7 @@ class PipelineTests {
     @WithTimeout(10000) // Override Jenkins test harness timeout. 180 seconds is not long enough.
     void "FamilyPipeline"() {
         final CpsFlowDefinition flow = new CpsFlowDefinition('''
-          familyTransformPipeline {
-            databaker = 'gsscogs/databaker:1.3.1'
-          }
+          familyTransformPipeline {}
         '''.stripIndent())
         final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
 
@@ -86,9 +84,7 @@ class PipelineTests {
     @WithTimeout(10000) // Override Jenkins test harness timeout. 180 seconds is not long enough.
     void "FamilyPipelineAccretiveUpload"() {
         final CpsFlowDefinition flow = new CpsFlowDefinition('''
-          familyTransformPipeline {
-              databaker = 'gsscogs/databaker:1.3.1'
-          }
+          familyTransformPipeline {}
         '''.stripIndent())
         final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')
 

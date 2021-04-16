@@ -342,13 +342,13 @@ class Drafter extends AbstractDrafter implements Serializable {
         throw new DrafterException("Problem publishing draftset, maximum retries reached while waiting for lock.")
     }
 
-    URI getDraftsetEndpoint(String id) {
-        String path = "/v1/draftset/${id}/query"
+    URI getDraftsetEndpoint(String id, String action) {
+        String path = "/v1/draftset/${id}/${action}"
         apiBase.resolve(path)
     }
 
     Object query(String id, String query, Boolean unionWithLive, Integer timeout, String accept) {
-        URIBuilder uriBuilder = new URIBuilder(getDraftsetEndpoint(id))
+        URIBuilder uriBuilder = new URIBuilder(getDraftsetEndpoint(id, "query"))
         uriBuilder.setParameter("union-with-live", unionWithLive.toString())
         if (timeout != null) {
             uriBuilder.setParameter("timeout", timeout.toString())
@@ -371,6 +371,25 @@ class Drafter extends AbstractDrafter implements Serializable {
             throw new DrafterException("Problem running query ${errorMsg(response)}")
         }
     }
+
+    void update(String draftId, String query, Integer timeout = null) {
+        URIBuilder uriBuilder = new URIBuilder(getDraftsetEndpoint(draftId, "update"))
+        if (timeout != null) {
+            uriBuilder.setParameter("timeout", timeout.toString())
+        }
+        Executor exec = getExec()
+        HttpResponse response = exec.execute(
+                Request.Post(uriBuilder.build())
+                        .addHeader("Authorization", "Bearer ${token}")
+                        .userAgent(PMDConfig.UA)
+                        .bodyForm(Form.form().add("query", query).build())
+        ).returnResponse()
+
+        if (response.getStatusLine().statusCode != 204) {
+            throw new DrafterException("Problem running query ${errorMsg(response)}")
+        }
+    }
+
 
 }
 

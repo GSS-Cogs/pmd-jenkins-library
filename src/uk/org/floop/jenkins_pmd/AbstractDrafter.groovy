@@ -14,8 +14,10 @@ abstract class AbstractDrafter {
     abstract Dictionary<String, Object> submitDraftsetTo(String id, Drafter.Role role, String user) throws DrafterException
     abstract Dictionary<String, Object> claimDraftset(String id) throws DrafterException
     abstract Dictionary<String, Object> publishDraftset(String id) throws DrafterException
-    abstract URI getDraftsetEndpoint(String id)
+    abstract URI getDraftsetEndpoint(String id, String action)
     abstract Object query(String id, String query, Boolean unionWithLive = false,
                           Integer timeout = null, String accept = "application/sparql-results+json") throws DrafterException
+    abstract void update(String draftId, String query, Integer timeout = null)
+            throws DrafterException
     abstract String getToken()
 }

@@ -1,164 +1,138 @@
-# -*- coding: utf-8 -*-
+# # MHCLG Rough sleeping
+
+from gssutils import *
+import json
+
 # +
-from gssutils import * 
-import json 
-from urllib.parse import urljoin
+#### Add transformation script here ####
 
 trace = TransformTrace()
-df = pd.DataFrame()
-# -
 
-info = json.load(open('info.json')) 
-scraper = Scraper(seed="info.json")   
-scraper 
-
-#Distribution 2: Imports and Exports of services by sector 
-tabs = { tab.name: tab for tab in scraper.distributions[1].as_databaker() }
-list(tabs)
-
-# Sheet : Imports 
+scraper = Scraper(seed="info.json")
+wanted = [x.title for x in scraper.distributions if "rough sleeping" in x.title.lower()]
+assert len(wanted) == 1, 'Aborting, more than 1 "Rough sleeping" source file found'
+distro = scraper.distribution(title=wanted[0])
+distro
 
 # +
-tab = tabs["Imports"]
-datasetTitle = 'dcms-sectors-economic-estimates-2018-trade-in-services'
-columns=["Period", "Flow", "Country", "Sector", "Sector Type", "Marker", "Measure Type", "Unit"]
-trace.start(datasetTitle, tab, columns, scraper.distributions[1].downloadURL)
 
-flow = "imports"
-trace.Flow("Hardcoded as Imports")
+cubes = Cubes("info.json")
 
-period = "year/2018" #TAKEN FROM SHEET TITLE
-trace.Period("Hardcoded as year/2018")
+# We're expecting exactly 4 sheets, track them and blow up if we're
+# mising any
+sheets_transformed = 0
 
-country = tab.excel_ref("A5").expand(DOWN)
-trace.Country("Values taken from cell A5 Down")
+for tab in distro.as_databaker():
+    try:
+        if tab.name == "Table 1 Total":
 
-sector = tab.excel_ref("A3").expand(RIGHT).is_not_blank()
-trace.Sector("Non blank values from cell A3 across")
+            trace.start("mhclg-rough-sleeping", tab.name, ["Value", "Period", "Region", "Area"], distro.downloadURL)
 
-sector_tpe = tab.excel_ref("B4").expand(RIGHT).is_not_blank()
-trace.Sector_Type("Non blank values from cell B4 across ")
+            trace.Area("Everything below the cell 'Local authority ONS code'.")
+            area = tab.filter("Local authority ONS code").assert_one().fill(DOWN)
 
-observations = country.waffle(sector_tpe).is_not_blank() 
-dimensions = [
-    HDimConst('Period', period),
-    HDimConst('Flow', flow),
-    HDim(country, 'Country', DIRECTLY, LEFT),
-    HDim(sector, 'Sector', CLOSEST, LEFT),
-    HDim(sector_tpe, 'Sector Type', DIRECTLY, ABOVE),
-    ]
-tidy_sheet = ConversionSegment(tab, dimensions, observations)
-trace.with_preview(tidy_sheet)
-trace.store("import_dataframe", tidy_sheet.topandas())
-df_imports = trace.combine_and_trace(datasetTitle, "import_dataframe")
+            trace.Region("Everything below the cell 'Region ONS code'.")
+            region = tab.filter("Region ONS code").assert_one().fill(DOWN).is_not_blank().is_not_whitespace()
+
+            trace.Period('Everything to the right of "Region ONS code"')
+            period = tab.filter("Region ONS code").assert_one().fill(RIGHT)
+            [int(x.value) for x in period] # If this blows up, one of our selected "period" values aint a year
+
+            obs = period.waffle(region).is_not_blank().is_not_whitespace()
+
+            dimensions = [
+                HDim(period, "Period", DIRECTLY, ABOVE),
+                HDim(area, "Area", DIRECTLY, LEFT),
+                HDim(region, "Region", DIRECTLY, LEFT)
+            ]
+
+            cs = ConversionSegment(tab, dimensions, obs)
+            df = cs.topandas()
+            df = df.fillna('')
+
+            # Where the data is at Region level, bring over the Area then
+            # drop the unnecessary Region column
+            df["Area"][df["Area"] == ""] = df["Region"]
+            df = df.drop("Region", axis=1)
+
+            df = df.rename(columns={"OBS": "Value"})
+
+            df["Sex"] = "all"
+            df["Nationality"] = "all"
+            df["Age"] = "all"
+
+            df["Measure Type"] = "people"
+            df["Unit"] = "count"
+
+            trace.store("MHCLG Rough Sleeping Final", df)
+
+
+        # All the Table2's are the same structure, we're just going to take
+        # the "metric" (thing what its talking about) from the tab name
+        if tab.name.lower().strip().startswith("table 2"):
+
+            metric_name = tab.name.split(" ")[-1].strip()
+            metric_name = "Sex" if metric_name == "Gender" else metric_name
+
+            trace.start("mhclg-rough-sleeping", tab.name, ["Value", "Period", "Region", "Area", metric_name], distro.downloadURL)
+
+            trace.Area("Everything below the cell 'Local authority ONS code'.")
+            area = tab.filter("Local authority ONS code").assert_one().fill(DOWN)
+
+            trace.Region("Everything below the cell 'Region ONS code'.")
+            region = tab.filter("Region ONS code").assert_one().fill(DOWN).is_not_blank().is_not_whitespace()
+
+            trace.Period('From the single year values above the obvious header row')
+            period = tab.filter("Region ONS code").assert_one().shift(UP).fill(RIGHT).is_not_blank().is_not_whitespace()
+            [int(x.value) for x in period] # If this blows up, one of our selected "period" values aint a year
+
+            metric_data = tab.filter("Region ONS code").assert_one().fill(RIGHT)
+            trace.multi([metric_name], 'Taken as the values to the right of "Region ONs code".')
+
+            obs = region.waffle(metric_data).is_not_blank().is_not_whitespace()
+
+            dimensions = [
+                HDim(period, "Period", CLOSEST, LEFT),
+                HDim(area, "Area", DIRECTLY, LEFT),
+                HDim(region, "Region", DIRECTLY, LEFT),
+                HDim(metric_data, metric_name, DIRECTLY, ABOVE)
+            ]
+
+            cs = ConversionSegment(tab, dimensions, obs)
+            df = cs.topandas()
+            df = df.fillna('')
+
+            df[metric_name] = df[metric_name].apply(pathify)
+            trace.multi([metric_name], f"Pathified all values in the {metric_name} column")
+
+            # Where the data is at Region level, bring over the Area then
+            # drop the unnecessary Region column
+            df["Area"][df["Area"] == ""] = df["Region"]
+            df = df.drop("Region", axis=1)
+
+            # Fill out the alls
+            if "Sex" not in df.columns.values:
+                df["Sex"] = "all"
+
+            if "Nationality" not in df.columns.values:
+                df["Nationality"] = "all"
+
+            if "Age" not in df.columns.values:
+                df["Age"] = "all"
+
+            df["Measure Type"] = "people"
+            df["Unit"] = "count"
+
+            df = df.rename(columns={"OBS": "Value"})
+            trace.store("MHCLG Rough Sleeping Final", df)
+
+    except Exception as err:
+        raise Exception(f'Issue encountered on tab {tab.name}, see above for details.') from err
+
+df = trace.combine_and_trace("MHCLG Rough Sleeping Final", "MHCLG Rough Sleeping Final")
+df["Period"] = df["Period"].map(lambda x: "year/"+x)
+
+cubes.add_cube(scraper, df, "observations", override_containing_graph="http://my-containing-graph-uri")
+cubes.output_all()
+trace.output()
 # -
-
-# Sheet : Exports 
-
-# +
-tab = tabs["Exports"]
-datasetTitle = 'DCMS Sectors Economic Estimates 2018: Trade in services : Exports'
-columns=["Period", "Flow", "Country", "Sector", "Sector Type", "Marker", "Measure Type", "Unit"]
-trace.start(datasetTitle, tab, columns, scraper.distributions[1].downloadURL)
-
-flow = "exports"
-trace.Flow("Hardcoded as Exports")
-
-period = "year/2018" #TAKEN FROM SHEET TITLE
-trace.Period("Hardcoded as year/2018")
-
-country = tab.excel_ref("A5").expand(DOWN)
-trace.Country("Values taken from cell A5 Down")
-
-sector = tab.excel_ref("A3").expand(RIGHT).is_not_blank()
-trace.Sector("Non blank values from cell A3 across")
-
-sector_tpe = tab.excel_ref("B4").expand(RIGHT).is_not_blank()
-trace.Sector_Type("Non blank values from cell B4 across ")
-
-observations = country.waffle(sector_tpe).is_not_blank()  
-dimensions = [
-    HDimConst('Period', period),
-    HDimConst('Flow', flow),
-    HDim(country, 'Country', DIRECTLY, LEFT),
-    HDim(sector, 'Sector', CLOSEST, LEFT),
-    HDim(sector_tpe, 'Sector Type', DIRECTLY, ABOVE),
-    ]
-tidy_sheet = ConversionSegment(tab, dimensions, observations)
-trace.with_preview(tidy_sheet)
-trace.store("exports_dataframe", tidy_sheet.topandas())
-df_exports = trace.combine_and_trace(datasetTitle, "exports_dataframe")
-
-# +
-tidy = pd.concat([df_exports, df_imports])
-
-#Post Processing
-tidy.rename(columns={'OBS' : 'Value', 'DATAMARKER' : 'Marker'}, inplace=True)
-tidy = tidy.replace({'Marker' : {'-' : 'suppressed'}})
-tidy['Value'] = tidy.apply(lambda x: 0 if x['Marker']== "suppressed" else x['Value'], axis=1)
-tidy = tidy.replace({'Sector Type' : {'Crafts4' : 'Crafts'}})
-
-tidy['Unit'] = "gbp-million"
-tidy['Measure Type'] = "count"
-
-# -
-
-tidy['Country'] = tidy['Country'].apply(pathify)
-tidy['Sector'] = tidy['Sector'].apply(pathify)
-tidy['Sector Type'] = tidy['Sector Type'].apply(pathify)
-tidy = tidy[['Period', 'Country', 'Sector', 'Sector Type', 'Flow', 'Measure Type', 'Unit', 'Value', 'Marker']]
-
-
-# +
-description = f"""
-DCMS Sector Economic Estimates 2018: Trade in Services is an official statistic and has been produced to the standards set out in the Code of Practice for Statistics.
-DCMS Sectors Economic Estimates 2018: Trade in services report:
-https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/863862/DCMS_Sectors_Economic_Estimates_2018_Trade_In_Services.pdf
-This release provides estimates of exports and imports of services by businesses in DCMS Sectors excluding Tourism and Civil Society2) in current prices. Any changes between years may reflect changes in the absolute value of the £ (affected by the domestic rate of inflation and by exchange rates), as well as changes in actual trade volume. These statistics are further broken down by selected countries, regions and continents.The latest year for which these estimates are available is 2018. Estimates of trade in services have been constructed from ONS official statistics using international classifications (StandardIndustrial Classification (SIC) codes). For further information see Annex A and the quality assurance (QA) document accompanying this report.Data are available for each DCMS Sector (excluding Tourism and Civil Society) and sub-sectors within the Creative Industries, Digital Sector, and Cultural Sector. There is significant overlap between DCMS Sectors so users should be aware that the estimate for “DCMSSectors Total” is lower than the sum of the individual sectors.
-
-The World totals are calculated on the same basis as previous years. However, the list of individual countries used in the calculation of the (world) regional and continental statistics (e.g. European Union, Latin America and Caribbean, Asia) is slightly different to the previous (August 2019) release. Therefore, these statistics in particular are not directly comparable with previous years. In particular: 
--The Bailiwick of Guernsey, the Bailiwick of Jersey and Timor-Leste form part of the Europe, Rest of Europe and    Asia totals for the first time.
--Gibraltar is included, and now forms part of the European Union total, in line with the Balance of Payments Vademecum. The EU Institutions total is also included on its own for the first time.     
--Latin America & Caribbean no longer includes America Unallocated as part of its calculation.
-A revised backseries of calculations on the current basis is expected to be provided in the summer.
-
-"""
-
-comment = "Official Statistics used to provide an estimate of the contribution of DCMS Sectors to the UK economy, measured by imports and exports of services."
-# -
-
-
-del tidy['Measure Type']
-del tidy['Unit']
-tidy = tidy.fillna('')
-
-# +
-csvName = 'observations.csv'
-out = Path('out')
-out.mkdir(exist_ok=True)
-tidy.drop_duplicates().to_csv(out / csvName, index = False)
-
-scraper.dataset.family = 'trade'
-scraper.dataset.description = description
-scraper.dataset.comment = comment
-scraper.dataset.title = 'Sectors Economic Estimates 2018: Trade in services'
-
-#dataset_path = pathify(os.environ.get('JOB_NAME', f'gss_data/{scraper.dataset.family}/' + Path(os.getcwd()).name) + '/pcn').lower()
-dataset_path = pathify(os.environ.get('JOB_NAME', f'gss_data/{scraper.dataset.family}/' + Path(os.getcwd()).name)).lower()
-
-scraper.set_base_uri('http://gss-data.org.uk')
-scraper.set_dataset_id(dataset_path)
-
-csvw_transform = CSVWMapping()
-csvw_transform.set_csv(out / csvName)
-csvw_transform.set_mapping(json.load(open('info.json')))
-csvw_transform.set_dataset_uri(urljoin(scraper._base_uri, f'data/{scraper._dataset_id}'))
-csvw_transform.write(out / f'{csvName}-metadata.json')
-
-# -
-
-tidy
-
-trace.render()
-
-

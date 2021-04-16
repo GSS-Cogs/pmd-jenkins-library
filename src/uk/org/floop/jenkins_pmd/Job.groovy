@@ -66,20 +66,25 @@ WHERE {
     }
 
     static String catalogEntryGraphLinkId = "DataSetUri -> Construct ?catalogEntry pmdcat:graph ?dataSetGraphUri"
-    static void ensureCatalogEntryGraphLinkExistsForDataSet(PMD pmd, String draftId, String dataSetUri, String[] dataSetGraphUris) {
-        pmd.drafter.query(draftId, """
+    static void ensureCatalogEntryGraphLinkExistsForDataSet(PMD pmd, String draftId, String dataSetUri,
+                                                            String[] dataSetGraphUris) {
+        pmd.drafter.update(draftId, """
             # ${catalogEntryGraphLinkId}
             PREFIX qb: <http://purl.org/linked-data/cube#>
             PREFIX pmdcat: <http://publishmydata.com/pmdcat#>
             
             INSERT {
-              ?catalogEntry pmdcat:graph ?dataSetGraphUri.
+                GRAPH ?catalogEntryGraph {
+                    ?catalogEntry pmdcat:graph ?dataSetGraphUri.
+                }
             }
             WHERE {              
                 BIND(<${dataSetUri}> as ?ds).
                 
                 ?ds a qb:DataSet.
+                GRAPH ?catalogEntryGraph {
                     ?catalogEntry pmdcat:datasetContents ?ds
+                }
                 
                 VALUES (?dataSetGraphUri) {
                     ${
@@ -87,9 +92,9 @@ WHERE {
                     }
                 }
                 
-                  FILTER NOT EXISTS {
+                FILTER NOT EXISTS {
                     ?catalogEntry pmdcat:graph ?dataSetGraphUri.
-                  }
+                }
             } 
         """)
     }

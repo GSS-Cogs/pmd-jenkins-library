@@ -65,7 +65,7 @@ class MockDrafter extends AbstractDrafter {
     }
 
     @Override
-    URI getDraftsetEndpoint(String id) {
+    URI getDraftsetEndpoint(String id, String action) {
         new URI("http://example.org/${id}")
     }
 
@@ -90,6 +90,8 @@ class MockDrafter extends AbstractDrafter {
         retVal.results = []
         return retVal
     }
+
+    void update(String draftId, String query, Integer timeout = null) {}
 
     @Override
     String getToken() {
