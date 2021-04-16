@@ -382,7 +382,7 @@ class Drafter extends AbstractDrafter implements Serializable {
                 Request.Post(uriBuilder.build())
                         .addHeader("Authorization", "Bearer ${token}")
                         .userAgent(PMDConfig.UA)
-                        .bodyForm(Form.form().add("query", query).build())
+                        .bodyForm(Form.form().add("update", query).build())
         ).returnResponse()
 
         if (response.getStatusLine().statusCode != 204) {
