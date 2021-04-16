@@ -355,9 +355,23 @@ def call(body, forceReplacementUpload = false) {
 
                                             def expectedGraphs = [datasetGraph]
                                             echo "Linking expected graphs ${expectedGraphs.join(", ")} to dataset ${datasetUri}"
-                                            util.ensureCatalogEntryGraphLinkExistsForDataSet draftId: id,
-                                                                                             dataSetUri: datasetUri,
-                                                                                             expectedGraphs: expectedGraphs
+
+                                            def catalogueEntryGraphUri = util.getCatalogGraphForDataSet(id, datasetUri)
+                                            def newCatalogEntryTriples =
+                                                    util.getCatalogEntryTriplesToAdd draftId: id,
+                                                                                     dataSetUri: datasetUri,
+                                                                                     expectedGraphs: expectedGraphs
+                                            if (newCatalogEntryTriples.length() > 0) {
+                                                def catalogEntriesFile = "${DATASET_DIR}/out/${baseName}-catalog-entry-graphs.ttl"
+                                                writeFile(file: catalogEntriesFile, text: newCatalogEntryTriples)
+                                                drafter.addData(
+                                                        id,
+                                                        catalogEntriesFile.toString(),
+                                                        "text/turtle",
+                                                        "UTF-8",
+                                                        catalogueEntryGraphUri
+                                                )
+                                            }
                                         }
                                     }
                                     for (def codelist : findFiles(glob: "out/codelists/*.ttl.gz")) {

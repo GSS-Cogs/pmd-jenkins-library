@@ -73,21 +73,22 @@ class MockDrafter extends AbstractDrafter {
     Object query(String id, String query, Boolean unionWithLive,
                                                  Integer timeout, String accept) throws DrafterException {
         def retVal = new Expando()
-//        if (query.contains(Job.getGraphForDataSetQueryIdentifier)) {
-//            def graph = new Expando()
-//            graph.value = "https://gss-data.org.uk/graph/some-graph-uri"
-//
-//            def binding = new Expando()
-//            binding.graph = graph
-//
-//            def result = new Expando()
-//            result.bindings = [binding]
-//
-//            retVal.results = [result]
-//        } else {
-//        }
+        if (query.contains(Job.catalogEntryGraphIdentifier)) {
+            def catalogEntryGraph = new Expando()
+            String graphUri = "https://gss-data.org.uk/graph/some-graph-uri"
+            catalogEntryGraph.value = graphUri
 
-        retVal.results = []
+            def binding = new Expando()
+            binding.catalogEntryGraph = catalogEntryGraph
+
+            def result = new Expando()
+            result.bindings = [binding]
+
+            retVal.results = [result]
+        } else {
+            retVal.results = []
+        }
+
         return retVal
     }
 

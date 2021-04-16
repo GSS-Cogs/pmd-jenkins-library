@@ -2,6 +2,7 @@ package uk.org.floop.jenkins_pmd
 
 import org.jenkinsci.plugins.uniqueid.IdStore
 import org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper
+import org.parboiled.common.Tuple2
 
 import java.time.Instant
 
@@ -65,30 +66,47 @@ WHERE {
 """
     }
 
-    static String catalogEntryGraphLinkId = "DataSetUri -> Construct ?catalogEntry pmdcat:graph ?dataSetGraphUri"
-    static void ensureCatalogEntryGraphLinkExistsForDataSet(PMD pmd, String draftId, String dataSetUri,
-                                                            String[] dataSetGraphUris) {
-        pmd.drafter.update(draftId, """
-            # ${catalogEntryGraphLinkId}
+    static String catalogEntryGraphIdentifier = "DataSetUri -> catalogEntry graph"
+    static String getCatalogEntryGraphForDataSet(PMD pmd, String draftId, String dataSetUri) {
+        def result = pmd.drafter.query(draftId, """
+            # ${catalogEntryGraphIdentifier}
             PREFIX qb: <http://purl.org/linked-data/cube#>
             PREFIX pmdcat: <http://publishmydata.com/pmdcat#>
-            
-            INSERT {
-                GRAPH ?catalogEntryGraph {
-                    ?catalogEntry pmdcat:graph ?dataSetGraphUri.
-                }
-            }
-            WHERE {              
+            SELECT DISTINCT ?catalogEntryGraph
+            WHERE {
                 BIND(<${dataSetUri}> as ?ds).
                 
                 ?ds a qb:DataSet.
                 GRAPH ?catalogEntryGraph {
                     ?catalogEntry pmdcat:datasetContents ?ds
                 }
+            }
+        """, true)
+        String graphUri = result.results.bindings[0].catalogEntryGraph.value
+        return graphUri
+    }
+
+
+    static String catalogEntryGraphLinkId = "DataSetUri -> Construct ?catalogEntry pmdcat:graph ?dataSetGraphUri"
+    static String getCatalogEntryTriplesToAdd(PMD pmd, String draftId, String dataSetUri,
+                                              String[] possiblyNewDataSetGraphUris) {
+        String newTriplesToInsert = pmd.drafter.query(draftId, """
+            # ${catalogEntryGraphLinkId}
+            PREFIX qb: <http://purl.org/linked-data/cube#>
+            PREFIX pmdcat: <http://publishmydata.com/pmdcat#>
+            
+            CONSTRUCT {
+                ?catalogEntry pmdcat:graph ?dataSetGraphUri.
+            }
+            WHERE {              
+                BIND(<${dataSetUri}> as ?ds).
+                
+                ?ds a qb:DataSet.
+                ?catalogEntry pmdcat:datasetContents ?ds
                 
                 VALUES (?dataSetGraphUri) {
                     ${
-                        dataSetGraphUris.collect({"(<${it}>)"}).join("\n")
+                        possiblyNewDataSetGraphUris.collect({"(<${it}>)"}).join("\n")
                     }
                 }
                 
@@ -96,7 +114,9 @@ WHERE {
                     ?catalogEntry pmdcat:graph ?dataSetGraphUri.
                 }
             } 
-        """)
+        """, true, null, "text/turtle")
+
+        return newTriplesToInsert
     }
 
     static List<String> graphs(RunWrapper build, PMD pmd, String draftId) {

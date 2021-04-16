@@ -372,8 +372,18 @@ class Drafter extends AbstractDrafter implements Serializable {
         }
     }
 
+    /**
+     * Don't use this. It only currently supports the following operations:
+     * DROP GRAPH <>
+     * INSERT DATA { }
+     * DELETE DATA { }
+     *
+     * You can't currently query data and insert based on that data.
+     * @param draftId
+     * @param query
+     * @param timeout
+     */
     void update(String draftId, String query, Integer timeout = null) {
-        echo query
         URIBuilder uriBuilder = new URIBuilder(getDraftsetEndpoint(draftId, "update"))
         if (timeout != null) {
             uriBuilder.setParameter("timeout", timeout.toString())
