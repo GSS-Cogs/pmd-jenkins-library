@@ -1,148 +1,108 @@
-# # MHCLG Rough sleeping 
+# ---
+# jupyter:
+#   jupytext:
+#     formats: ipynb,py:light
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.5'
+#       jupytext_version: 1.3.3
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
 
-from gssutils import * 
-import json 
+# UK trade in services: all countries, non-seasonally adjusted
 
 # +
-#### Add transformation script here #### 
+from gssutils import *
+import json
+import numpy as np
 
-trace = TransformTrace()
-
-scraper = Scraper(seed="info.json") 
-wanted = [x.title for x in scraper.distributions if "rough sleeping" in x.title.lower()]
-assert len(wanted) == 1, 'Aborting, more than 1 "Rough sleeping" source file found'
-distro = scraper.distribution(title=wanted[0])
-distro 
-
-# +
-
+df = pd.DataFrame()
 cubes = Cubes("info.json")
-
-# We're expecting exactly 4 sheets, track them and blow up if we're
-# mising any
-sheets_transformed = 0
-
-for tab in distro.as_databaker():
-    try:
-        if tab.name == "Table 1 Total":
-            
-            trace.start("mhclg-rough-sleeping", tab.name, ["Value", "Period", "Region", "Area"], distro.downloadURL)
-            
-            trace.Area("Everything below the cell 'Local authority ONS code'.")
-            area = tab.filter("Local authority ONS code").assert_one().fill(DOWN)
-            
-            trace.Region("Everything below the cell 'Region ONS code'.")
-            region = tab.filter("Region ONS code").assert_one().fill(DOWN).is_not_blank().is_not_whitespace()
-            
-            trace.Period('Everything to the right of "Region ONS code"')
-            period = tab.filter("Region ONS code").assert_one().fill(RIGHT)
-            [int(x.value) for x in period] # If this blows up, one of our selected "period" values aint a year
-            
-            obs = period.waffle(region).is_not_blank().is_not_whitespace()
-            
-            dimensions = [
-                HDim(period, "Period", DIRECTLY, ABOVE),
-                HDim(area, "Area", DIRECTLY, LEFT),
-                HDim(region, "Region", DIRECTLY, LEFT)
-            ]
-            
-            cs = ConversionSegment(tab, dimensions, obs)
-            df = cs.topandas()
-            df = df.fillna('')
-            
-            # Where the data is at Region level, bring over the Area then
-            # drop the unnecessary Region column
-            df["Area"][df["Area"] == ""] = df["Region"]
-            df = df.drop("Region", axis=1)
-            
-            df = df.rename(columns={"OBS": "Value"})
-            
-            df["Sex"] = "all"
-            df["Nationality"] = "all"
-            df["Age"] = "all"
-            
-            df["Measure Type"] = "people"
-            df["Unit"] = "count"
-            
-            trace.store("MHCLG Rough Sleeping Final", df)
-
-            
-        # All the Table2's are the same structure, we're just going to take
-        # the "metric" (thing what its talking about) from the tab name
-        if tab.name.lower().strip().startswith("table 2"):
-            
-            metric_name = tab.name.split(" ")[-1].strip()
-            metric_name = "Sex" if metric_name == "Gender" else metric_name
-            
-            trace.start("mhclg-rough-sleeping", tab.name, ["Value", "Period", "Region", "Area", metric_name], distro.downloadURL)
-            
-            trace.Area("Everything below the cell 'Local authority ONS code'.")
-            area = tab.filter("Local authority ONS code").assert_one().fill(DOWN)
-            
-            trace.Region("Everything below the cell 'Region ONS code'.")
-            region = tab.filter("Region ONS code").assert_one().fill(DOWN).is_not_blank().is_not_whitespace()
-            
-            trace.Period('From the single year values above the obvious header row')
-            period = tab.filter("Region ONS code").assert_one().shift(UP).fill(RIGHT).is_not_blank().is_not_whitespace()
-            [int(x.value) for x in period] # If this blows up, one of our selected "period" values aint a year
-            
-            metric_data = tab.filter("Region ONS code").assert_one().fill(RIGHT)
-            trace.multi([metric_name], 'Taken as the values to the right of "Region ONs code".')
-            
-            obs = region.waffle(metric_data).is_not_blank().is_not_whitespace()
-            
-            dimensions = [
-                HDim(period, "Period", CLOSEST, LEFT),
-                HDim(area, "Area", DIRECTLY, LEFT),
-                HDim(region, "Region", DIRECTLY, LEFT),
-                HDim(metric_data, metric_name, DIRECTLY, ABOVE)
-            ]
-            
-            cs = ConversionSegment(tab, dimensions, obs)
-            df = cs.topandas()
-            df = df.fillna('')
-            
-            df[metric_name] = df[metric_name].apply(pathify)
-            trace.multi([metric_name], f"Pathified all values in the {metric_name} column")
-            
-            # Where the data is at Region level, bring over the Area then
-            # drop the unnecessary Region column
-            df["Area"][df["Area"] == ""] = df["Region"]
-            df = df.drop("Region", axis=1)
-            
-            # Fill out the alls
-            if "Sex" not in df.columns.values:
-                df["Sex"] = "all"
-               
-            if "Nationality" not in df.columns.values:
-                df["Nationality"] = "all"
-                
-            if "Age" not in df.columns.values:
-                df["Age"] = "all"
-                
-            df["Measure Type"] = "people"
-            df["Unit"] = "count"
-            
-            df = df.rename(columns={"OBS": "Value"})
-            trace.store("MHCLG Rough Sleeping Final", df)
-        
-    except Exception as err:
-        raise Exception(f'Issue encountered on tab {tab.name}, see above for details.') from err
-    
-df = trace.combine_and_trace("MHCLG Rough Sleeping Final", "MHCLG Rough Sleeping Final")
-df["Period"] = df["Period"].map(lambda x: "year/"+x)
-
-cubes.add_cube(scraper, df, "observations")
-cubes.output_all()
-trace.output()
+scraper = Scraper(json.load(open('info.json'))['landingPage'])
 # -
 
+tabs = {tab.name: tab for tab in scraper.distribution(
+    latest=True).as_databaker()}
 
 
+# +
+def left(s, amount):
+    return s[:amount]
 
 
+def right(s, amount):
+    return s[-amount:]
 
 
+def date_time(date):
+    if len(date) == 4:
+        return 'year/' + date
+    elif len(date) == 6:
+        return 'quarter/' + left(date, 4) + '-' + right(date, 2)
+    else:
+        return date
 
 
+dfs = []
 
+for name, tab in tabs.items():
+    datasetTitle = 'uk-total-trade-all-countries-non-seasonally-adjusted'
+    columns = ['Period', 'Country', 'Flow', 'Trade Type', 'Marker']
+
+    if 'Index' in name or '7 Contact Sheet' in name:
+        continue
+    observations = tab.excel_ref('C7').expand(DOWN).expand(
+        RIGHT).is_not_blank().is_not_whitespace()
+    period = tab.excel_ref('C4').expand(
+        RIGHT).is_not_blank().is_not_whitespace()
+    flow = tab.fill(DOWN).one_of(['Exports', 'Imports'])
+    country = tab.excel_ref('A7').expand(
+        DOWN).is_not_blank().is_not_whitespace()
+    trade_type = tab.excel_ref('B1')
+    dimensions = [
+        HDim(period, 'Period', DIRECTLY, ABOVE),
+        HDim(country, 'Country', DIRECTLY, LEFT),
+        HDim(flow, 'Flow', CLOSEST, ABOVE),
+        HDim(trade_type, 'Trade Type', CLOSEST, LEFT),
+    ]
+    dfs.append(ConversionSegment(tab, dimensions, observations).topandas())
+    break
+    # savepreviewhtml(tidy_sheet, fname=tab.name + "Preview.html")
+
+# -
+
+# Post Processing
+df = pd.concat(dfs).reset_index(drop=True)
+
+df.rename(columns={'OBS': 'Value', 'DATAMARKER': 'Marker'}, inplace=True)
+# df['Value'] = df['Value'].astype(float)
+df['Value'] = pd.to_numeric(df.Value, errors='coerce')
+df['Flow'] = df['Flow'].map(lambda s: s.lower().strip())
+df["Country"] = df["Country"].map(lambda x: pathify(x).upper())
+df['Trade Type'] = df['Trade Type'].apply(lambda x: 'total' if 'Total Trade' in x else
+                                      ('goods' if 'Trade in Goods' in x else
+                                       ('services' if 'Trade in Services' in x else x)))
+df['Period'] = df['Period'].astype(str).replace('\.0', '', regex=True)
+df['Period'] = df["Period"].apply(date_time)
+df = df[['Period', 'Country', 'Flow', 'Trade Type', 'Value']]
+
+# additional scraper info needed
+scraper.dataset.family = 'trade'
+add_to_des = """
+These tables have been produced to provide an aggregated quarterly goods and services estimate and combines the most recent estimates for goods and services split by country.
+Data for goods and services is consistent for annual whole world totals and quarters (from Q1 2016) with the trade data published in the Quarterly National Accounts, Quarterly Sector Accounts and Quarterly Balance of Payments on 30th September 2020.
+These data are our best estimate of these bilateral UK trade flows. Users should note that alternative estimates are available, in some cases, via the statistical agencies for bilateral countries or through central databases such as:
+UN Comtrade.
+Some data for countries have been marked with N/A. This is because Trade in Goods do not collate data from these countries, therefore only Trade in Services is reflected within total trade for these countries
+The data within these tables are also consistent with the below releases:
+For Trade in Goods the data is consistent with UK Trade: August 2020 publication on 9th October 2020
+For Trade in Services the data is consistent with UK Trade in services by partner country: April to June 2020 publication on 4th November 2020
+"""
+scraper.dataset.description = scraper.dataset.description + add_to_des
+
+cubes.add_cube(scraper, df.drop_duplicates(), "ons-uk-total-trade")
+cubes.output_all()

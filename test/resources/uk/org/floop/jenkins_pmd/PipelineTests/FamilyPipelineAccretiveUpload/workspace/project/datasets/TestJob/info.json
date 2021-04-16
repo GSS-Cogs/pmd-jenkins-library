@@ -1,114 +1,52 @@
 {
-    "id": "mhclg-rough-sleeping",
-    "title": "Rough sleeping",
-    "publisher": "Ministry for Housing, Communities and Local Government",
-    "description": "Annual statistical release evaluating the extent of rough sleeping",
-    "landingPage": "https://www.gov.uk/government/statistical-data-sets/live-tables-on-homelessness",
+    "id": "ons-uk-total-trade",
+    "title": "UK total trade: all countries, non-seasonally adjusted",
+    "publisher": "Office for National Statistics",
+    "description": "Quarterly estimates of total trade, trade in goods and trade in services by country, non-seasonally adjusted.",
+    "landingPage": "https://www.ons.gov.uk/businessindustryandtrade/internationaltrade/datasets/uktotaltradeallcountriesnonseasonallyadjusted",
     "datasetNotes": [
-        "Data can be located on the landing page by scrolling down the page to 'Rough sleeping tables'  click on the latest publication this will open an XLS spreadsheet however other formats may be available please see notes for details of how to request."
+        "Data is located on landing page under your download options"
     ],
-    "published": "2019-01-31",
+    "published": "2020-01-22",
     "families": [
-        "Homelessness"
+        "Trade"
     ],
     "extract": {
         "source": "XLS",
-        "stage": "Documented"
+        "stage": "Done"
     },
     "transform": {
-        "airtable": "rec8y9CsU6ZNX73Mv",
-        "main_issue": 2
-    },
-    "sizingNotes": "",
-    "notes": "",
-    "noofdatasets": "1",
-    "dataset1": {
-        "spreadsheetname": "Rough sleeping statistics England",
-        "name": "Rough Sleeping Street Counts",
-        "noofsheets": "4",
-        "sheet1": {
-            "name": "table 1",
-            "columnnames": [
-                "ONS Geography Code",
-                "Local Authority",
-                "SpareCol1",
-                "Period",
-                "SpareRow1",
-                "SpareRow2"
-            ],
-            "coords": [
-                "A5",
-                "B5",
-                "A5",
-                "D4",
-                "D4",
-                "D4",
-                "D5:N367"
-            ]
+        "airtable": "recMJhku0J2Kbp8du",
+        "columns": {
+            "Period": {
+                "parent": "http://purl.org/linked-data/sdmx/2009/dimension#refPeriod",
+                "value": "http://reference.data.gov.uk/id/{+period}"
+            },
+            "Country": {
+                "description": "Country",
+                "value": "http://gss-data.org.uk/def/concept/cl-area/{country}",
+                "codelist": "http://gss-data.org.uk/def/concept-scheme/cl-area"
+            },
+            "Flow": {
+                "dimension": "http://gss-data.org.uk/def/trade/property/dimension/flow-directions",
+                "value": "http://gss-data.org.uk/def/trade/concept/flow-directions/{flow}"
+            },
+            "Value": {
+                "unit": "http://gss-data.org.uk/def/concept/measurement-units/gbp-million",
+                "measure": "http://gss-data.org.uk/def/measure/current-prices",
+                "datatype": "decimal"
+            },
+            "Marker": {
+                "attribute": "http://purl.org/linked-data/sdmx/2009/attribute#obsStatus",
+                "value": "http://gss-data.org.uk/def/concept/cogs-markers/{marker}"
+            }
         },
-        "sheet2": {
-            "name": "table 2a",
-            "columnnames": [
-                "ONS Geography Code",
-                "Local Authority",
-                "SpareCol1",
-                "Period",
-                "Gender",
-                "SpareRow2"
-            ],
-            "coords": [
-                "A6",
-                "B6",
-                "A6",
-                "D4",
-                "D5",
-                "D4",
-                "D7:N358"
-            ]
-        },
-        "sheet3": {
-            "name": "table 2b",
-            "columnnames": [
-                "ONS Geography Code",
-                "Local Authority",
-                "SpareCol1",
-                "Period",
-                "Nationality",
-                "SpareRow2"
-            ],
-            "coords": [
-                "A6",
-                "B6",
-                "A6",
-                "D4",
-                "D5",
-                "D4",
-                "D7:N358"
-            ]
-        },
-        "sheet4": {
-            "name": "table 2c",
-            "columnnames": [
-                "ONS Geography Code",
-                "Local Authority",
-                "SpareCol1",
-                "Period",
-                "Age",
-                "SpareRow2"
-            ],
-            "coords": [
-                "A6",
-                "B6",
-                "A6",
-                "D4",
-                "D5",
-                "D4",
-                "D7:N358"
-            ]
-        }
+        "main_issue": 6
     },
     "load": {
         "accretiveUpload": true,
-        "publish": true
-    }
+        "publish": false
+    },
+    "sizingNotes": "Simple file structure, mid size table with non-complex dimensions and some footnotes.",
+    "notes": ""
 }
