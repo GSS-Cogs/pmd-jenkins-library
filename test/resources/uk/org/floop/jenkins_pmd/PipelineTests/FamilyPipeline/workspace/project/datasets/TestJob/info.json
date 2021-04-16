@@ -1,53 +1,110 @@
 {
-    "title": "DCMS Sectors Economic Estimates [Year]: Trade in services",
-    "publisher": "Department for Digital, Culture, Media & Sport",
-    "description": "Official Statistics used to provide an estimate of the contribution of DCMS Sectors to the UK economy, measured by imports and exports of services.",
-    "landingPage": "https://www.gov.uk/government/statistics/dcms-sectors-economic-estimates-2018-trade-in-services",
+    "id": "mhclg-rough-sleeping",
+    "title": "Rough sleeping",
+    "publisher": "Ministry for Housing, Communities and Local Government",
+    "description": "Annual statistical release evaluating the extent of rough sleeping",
+    "landingPage": "https://www.gov.uk/government/statistical-data-sets/live-tables-on-homelessness",
     "datasetNotes": [
-        "On landing page under documents "
+        "Data can be located on the landing page by scrolling down the page to 'Rough sleeping tables'  click on the latest publication this will open an XLS spreadsheet however other formats may be available please see notes for details of how to request."
     ],
-    "published": "2020-02-06",
+    "published": "2019-01-31",
     "families": [
-        "Trade"
+        "Homelessness"
     ],
     "extract": {
-        "source": "XLS"
+        "source": "XLS",
+        "stage": "Documented"
     },
     "transform": {
-        "airtable": "recmp8VQCu6Nya893",
-        "columns": {
-            "Period": {
-                "parent": "http://purl.org/linked-data/sdmx/2009/dimension#refPeriod",
-                "value": "http://reference.data.gov.uk/id/{+period}"
-            },
-            "Value": {
-                "unit": "http://gss-data.org.uk/def/concept/measurement-units/gbp-million",
-                "measure": "http://gss-data.org.uk/def/measure/count",
-                "datatype": "double"
-            },
-            "Marker": {
-                "attribute": "http://purl.org/linked-data/sdmx/2009/attribute#obsStatus",
-                "value": "http://gss-data.org.uk/def/concept/cogs-markers/{marker}"
-            },
-            "Flow": {
-                "parent": "http://gss-data.org.uk/def/concept-scheme/flow",
-                "value": "http://gss-data.org.uk/def/concept/flow/{flow}",
-                "description": ""
-            },
-            "Country": {
-                "parent": "http://gss-data.org.uk/def/concept-scheme/dcms-country",
-                "value": "http://gss-data.org.uk/def/concept/dcms-country/{country}",
-                "description": ""
-            }
-        },
-        "stage": [
-            "To Do"
-        ],
-        "main_issue": 86
-    },
-    "load": {
-        "publish": true
+        "airtable": "rec8y9CsU6ZNX73Mv",
+        "main_issue": 2
     },
     "sizingNotes": "",
-    "notes": ""
+    "notes": "",
+    "noofdatasets": "1",
+    "dataset1": {
+        "spreadsheetname": "Rough sleeping statistics England",
+        "name": "Rough Sleeping Street Counts",
+        "noofsheets": "4",
+        "sheet1": {
+            "name": "table 1",
+            "columnnames": [
+                "ONS Geography Code",
+                "Local Authority",
+                "SpareCol1",
+                "Period",
+                "SpareRow1",
+                "SpareRow2"
+            ],
+            "coords": [
+                "A5",
+                "B5",
+                "A5",
+                "D4",
+                "D4",
+                "D4",
+                "D5:N367"
+            ]
+        },
+        "sheet2": {
+            "name": "table 2a",
+            "columnnames": [
+                "ONS Geography Code",
+                "Local Authority",
+                "SpareCol1",
+                "Period",
+                "Gender",
+                "SpareRow2"
+            ],
+            "coords": [
+                "A6",
+                "B6",
+                "A6",
+                "D4",
+                "D5",
+                "D4",
+                "D7:N358"
+            ]
+        },
+        "sheet3": {
+            "name": "table 2b",
+            "columnnames": [
+                "ONS Geography Code",
+                "Local Authority",
+                "SpareCol1",
+                "Period",
+                "Nationality",
+                "SpareRow2"
+            ],
+            "coords": [
+                "A6",
+                "B6",
+                "A6",
+                "D4",
+                "D5",
+                "D4",
+                "D7:N358"
+            ]
+        },
+        "sheet4": {
+            "name": "table 2c",
+            "columnnames": [
+                "ONS Geography Code",
+                "Local Authority",
+                "SpareCol1",
+                "Period",
+                "Age",
+                "SpareRow2"
+            ],
+            "coords": [
+                "A6",
+                "B6",
+                "A6",
+                "D4",
+                "D5",
+                "D4",
+                "D7:N358"
+            ]
+        }
+    }
 }
