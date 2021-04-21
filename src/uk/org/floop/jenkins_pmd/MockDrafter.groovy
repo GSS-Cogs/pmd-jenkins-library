@@ -1,6 +1,6 @@
 package uk.org.floop.jenkins_pmd
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
+import uk.org.floop.jenkins_pmd.enums.DrafterAction
 
 /**
  * It's unpleasant to have place this class outside of the integrationtest library, but we can't directly reference
@@ -65,7 +65,7 @@ class MockDrafter extends AbstractDrafter {
     }
 
     @Override
-    URI getDraftsetEndpoint(String id, String action) {
+    URI getDraftsetEndpoint(String id, DrafterAction action) {
         new URI("http://example.org/${id}")
     }
 

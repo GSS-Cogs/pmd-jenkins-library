@@ -13,6 +13,7 @@ import org.apache.http.client.fluent.Request
 import org.apache.http.client.utils.URIBuilder
 import org.apache.http.entity.ContentType
 import org.apache.http.util.EntityUtils
+import uk.org.floop.jenkins_pmd.enums.DrafterAction
 
 class Drafter extends AbstractDrafter implements Serializable {
     private PMD pmd
@@ -342,13 +343,14 @@ class Drafter extends AbstractDrafter implements Serializable {
         throw new DrafterException("Problem publishing draftset, maximum retries reached while waiting for lock.")
     }
 
-    URI getDraftsetEndpoint(String id, String action) {
-        String path = "/v1/draftset/${id}/${action}"
+    URI getDraftsetEndpoint(String id, DrafterAction action) {
+        String actionPath = DrafterAction.toActionPath(action)
+        String path = "/v1/draftset/${id}/${actionPath}"
         apiBase.resolve(path)
     }
 
     Object query(String id, String query, Boolean unionWithLive, Integer timeout, String accept) {
-        URIBuilder uriBuilder = new URIBuilder(getDraftsetEndpoint(id, "query"))
+        URIBuilder uriBuilder = new URIBuilder(getDraftsetEndpoint(id, DrafterAction.Query))
         uriBuilder.setParameter("union-with-live", unionWithLive.toString())
         if (timeout != null) {
             uriBuilder.setParameter("timeout", timeout.toString())
@@ -384,7 +386,7 @@ class Drafter extends AbstractDrafter implements Serializable {
      * @param timeout
      */
     void update(String draftId, String query, Integer timeout = null) {
-        URIBuilder uriBuilder = new URIBuilder(getDraftsetEndpoint(draftId, "update"))
+        URIBuilder uriBuilder = new URIBuilder(getDraftsetEndpoint(draftId, DrafterAction.Update))
         if (timeout != null) {
             uriBuilder.setParameter("timeout", timeout.toString())
         }

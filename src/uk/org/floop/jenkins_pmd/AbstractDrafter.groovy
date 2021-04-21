@@ -1,5 +1,7 @@
 package uk.org.floop.jenkins_pmd
 
+import uk.org.floop.jenkins_pmd.enums.DrafterAction
+
 /**
  * This abstract base class allows us to mock the `Drafter` class in integration tests.
  * It's an abstract class rather than an interface as this will allow me to include the default params.
@@ -14,7 +16,7 @@ abstract class AbstractDrafter {
     abstract Dictionary<String, Object> submitDraftsetTo(String id, Drafter.Role role, String user) throws DrafterException
     abstract Dictionary<String, Object> claimDraftset(String id) throws DrafterException
     abstract Dictionary<String, Object> publishDraftset(String id) throws DrafterException
-    abstract URI getDraftsetEndpoint(String id, String action)
+    abstract URI getDraftsetEndpoint(String id, DrafterAction action)
     abstract Object query(String id, String query, Boolean unionWithLive = false,
                           Integer timeout = null, String accept = "application/sparql-results+json") throws DrafterException
     abstract void update(String draftId, String query, Integer timeout = null)
