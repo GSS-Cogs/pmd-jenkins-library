@@ -1,6 +1,6 @@
 package uk.org.floop.jenkins_pmd
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
+import uk.org.floop.jenkins_pmd.enums.DrafterAction
 
 /**
  * It's unpleasant to have place this class outside of the integrationtest library, but we can't directly reference
@@ -65,7 +65,7 @@ class MockDrafter extends AbstractDrafter {
     }
 
     @Override
-    URI getDraftsetEndpoint(String id) {
+    URI getDraftsetEndpoint(String id, DrafterAction action) {
         new URI("http://example.org/${id}")
     }
 
@@ -73,12 +73,13 @@ class MockDrafter extends AbstractDrafter {
     Object query(String id, String query, Boolean unionWithLive,
                                                  Integer timeout, String accept) throws DrafterException {
         def retVal = new Expando()
-        if (query.contains(Job.getGraphForDataSetQueryIdentifier)) {
-            def graph = new Expando()
-            graph.value = "https://gss-data.org.uk/graph/some-graph-uri"
+        if (query.contains(Job.catalogEntryGraphIdentifier)) {
+            def catalogEntryGraph = new Expando()
+            String graphUri = "https://gss-data.org.uk/graph/some-graph-uri"
+            catalogEntryGraph.value = graphUri
 
             def binding = new Expando()
-            binding.graph = graph
+            binding.catalogEntryGraph = catalogEntryGraph
 
             def result = new Expando()
             result.bindings = [binding]
@@ -90,6 +91,8 @@ class MockDrafter extends AbstractDrafter {
 
         return retVal
     }
+
+    void update(String draftId, String query, Integer timeout = null) {}
 
     @Override
     String getToken() {

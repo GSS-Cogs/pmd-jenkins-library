@@ -1,4 +1,5 @@
 import uk.org.floop.jenkins_pmd.Drafter
+import uk.org.floop.jenkins_pmd.enums.DrafterAction
 import uk.org.floop.jenkins_pmd.enums.SparqlTestGroup
 
 def test(Map config = null) {
@@ -24,7 +25,7 @@ def test(Map config = null) {
     def pmd = pmdConfig("pmd")
     def drafter = pmd.drafter
     String draftId = drafter.findDraftset(env.JOB_NAME, Drafter.Include.OWNED).id
-    String endpoint = drafter.getDraftsetEndpoint(draftId)
+    String endpoint = drafter.getDraftsetEndpoint(draftId, DrafterAction.Query)
     String dspath = util.slugise(env.JOB_NAME)
     def fromGraphs = util.jobGraphs(pmd, draftId)
     if (includeGraphsReferencedByDataset) {

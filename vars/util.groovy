@@ -81,6 +81,13 @@ boolean isAccretiveUpload() {
   return false
 }
 
-String getGraphForDataSet(String draftId, String dataSetUri, boolean unionWithLive) {
-  Job.getGraphForDataSet(pmdConfig("pmd"), draftId, dataSetUri, unionWithLive)
+String getCatalogGraphForDataSet(String draftId, String dataSetUri) {
+  Job.getCatalogEntryGraphForDataSet(pmdConfig("pmd"), draftId, dataSetUri)
+}
+
+String getCatalogEntryTriplesToAdd(Map config) {
+  String draftId = config.get("draftId")
+  String dataSetUri = config.get("dataSetUri")
+  String[] dataSetGraphUris = config.get("expectedGraphs")
+  Job.getCatalogEntryTriplesToAdd(pmdConfig("pmd"), draftId, dataSetUri, dataSetGraphUris)
 }
