@@ -10,4 +10,5 @@ class PMDConfig implements Serializable {
     String base_uri
     Integer test_timeout
     Boolean mock_drafter = false
+    String pmd_public_sparql_endpoint
 }

@@ -37,7 +37,8 @@ class PipelineTests {
           "credentials": "onspmd4",
           "default_mapping": "https://github.com/ONS-OpenData/ref_trade/raw/master/columns.csv",
           "base_uri": "http://gss-data.org.uk",
-          "mock_drafter": true
+          "mock_drafter": true,
+          "pmd_public_sparql_endpoint": "https://staging.gss-data.org.uk/sparql"
         }""")
     }
 

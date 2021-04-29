@@ -4,6 +4,7 @@ class PMD implements Serializable {
     PMDConfig config
     AbstractDrafter drafter
     String clientID, clientSecret
+    String pmdPublicSparqlEndPoint
 
     PMD(PMDConfig config, clientID, clientSecret) {
         this.config = config
@@ -12,5 +13,6 @@ class PMD implements Serializable {
         this.drafter = config.mock_drafter
                 ? new MockDrafter(this)
                 : new Drafter(this)
+        this.pmdPublicSparqlEndPoint = config.pmd_public_sparql_endpoint
     }
 }

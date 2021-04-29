@@ -22,6 +22,7 @@ def call(body, forceReplacementUpload = false) {
         environment {
             DATASET_DIR = "${pwd()}/datasets/${JOB_BASE_NAME}"
             JOB_ID = util.getJobID()
+            SPARQL_URI = "${pmdConfig("pmd").pmdPublicSparqlEndPoint}"
         }
         stages {
             stage('Clean') {
