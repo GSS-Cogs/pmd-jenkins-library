@@ -15,7 +15,7 @@ def call(body, forceReplacementUpload = false) {
     String CSV2RDF = pipelineParams['csv2rdf'] ?: 'gsscogs/csv2rdf'
     String GSS_JVM_BUILD_TOOLS = pipelineParams['gssjvmbuildtools'] ?: 'gsscogs/gss-jvm-build-tools'
     String SPARQL_TESTS = pipelineParams['sparqltests'] ?: 'gsscogs/gdp-sparql-tests'
-    Boolean DEBUG_PYTHON = pipelineParams['debugPython'] ?: false
+    boolean DEBUG_PYTHON = pipelineParams['debugPython'] ?: false
 
     pipeline {
         agent {
