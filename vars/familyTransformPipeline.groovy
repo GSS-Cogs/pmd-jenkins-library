@@ -1,4 +1,5 @@
 import groovy.json.JsonOutput
+import org.apache.xpath.operations.Bool
 import uk.org.floop.jenkins_pmd.Drafter
 import uk.org.floop.jenkins_pmd.SparqlQuery
 
@@ -14,6 +15,7 @@ def call(body, forceReplacementUpload = false) {
     String CSV2RDF = pipelineParams['csv2rdf'] ?: 'gsscogs/csv2rdf'
     String GSS_JVM_BUILD_TOOLS = pipelineParams['gssjvmbuildtools'] ?: 'gsscogs/gss-jvm-build-tools'
     String SPARQL_TESTS = pipelineParams['sparqltests'] ?: 'gsscogs/gdp-sparql-tests'
+    Boolean DEBUG_PYTHON = pipelineParams['debugPython'] ?: false
 
     pipeline {
         agent {
@@ -65,7 +67,13 @@ def call(body, forceReplacementUpload = false) {
                                         if (fileExists("main.py")) {
                                             sh "jupytext --to notebook '*.py'"
                                         }
-                                        sh "jupyter-nbconvert --to html --output-dir='out' --ExecutePreprocessor.timeout=None --execute 'main.ipynb'"
+
+                                        echo "Sparql endpoint: ${env.SPARQL_URL}"
+                                        def nbConvertCommand = "jupyter-nbconvert --to html --output-dir='out' --ExecutePreprocessor.timeout=None --execute 'main.ipynb'"
+                                        if (DEBUG_PYTHON) {
+                                            nbConvertCommand += " --debug"
+                                        }
+                                        sh nbConvertCommand
                                     }
                                 }
                             }
