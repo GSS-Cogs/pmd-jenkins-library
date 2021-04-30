@@ -1,5 +1,4 @@
 import groovy.json.JsonOutput
-import org.apache.xpath.operations.Bool
 import uk.org.floop.jenkins_pmd.Drafter
 import uk.org.floop.jenkins_pmd.SparqlQuery
 
