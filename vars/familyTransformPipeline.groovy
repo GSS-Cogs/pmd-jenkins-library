@@ -205,7 +205,7 @@ def call(body, forceReplacementUpload = false) {
                                     }
 
                                     writeFile file: "buildActionQueue.json", text: JsonOutput.toJson(buildActionQueue)
-                                    sh "JAVA_TOOL_OPTIONS=\"-Xmx7g\" gss-jvm-build-tools -c buildActionQueue.json --verbose"
+                                    sh "gss-jvm-build-tools -c buildActionQueue.json --verbose"
 
                                     for (def dataset: datasets) {
                                         def dataSetTtlOut = "${dataset.output}.ttl"
