@@ -192,9 +192,9 @@ def call(body, forceReplacementUpload = false) {
                                                                "${dataset.output}-dataset-uri.json" ]
                                         ])
 
-                                        if (!isAccretiveUpload) {
-                                            // .trig file not generated or desired in accretive Upload
-                                            // to avoid duplication of metadata.
+                                        if (fileExists(dataset.catalogMetadata)) {
+                                            // .trig file not generated or desired in accretive Upload/multi-graph
+                                            // datasets to avoid duplication of metadata.
                                             buildActionQueue.add([
                                                     "file"     : dataset.catalogMetadata,
                                                     "opType"   : "SPARQL Query",
@@ -320,20 +320,22 @@ def call(body, forceReplacementUpload = false) {
                                             def datasetUriJson = readJSON(text: readFile(file: "out/${baseName}-dataset-uri.json"))
                                             def datasetUri = datasetUriJson.results.bindings[0].datasetUri.value
 
-                                            if (!isAccretiveUpload) {
+                                            def expectedTrigFilePath = "${DATASET_DIR}/out/${baseName}.csv-metadata.trig"
+                                            if (fileExists(expectedTrigFilePath)) {
+                                                // .trig file not generated or desired in accretive Upload/multi-graph
+                                                // datasets to avoid duplication of metadata.
+                                                echo "Adding ${observations.name} metadata."
                                                 def metadataGraphUriJson = readJSON(text: readFile(file: "out/${baseName}-metadata-graph.json"))
                                                 String metadataGraph = metadataGraphUriJson.results.bindings[0].metadataGraphUri.value
 
-                                                // .trig file not generated or desired in accretive Upload
-                                                // to avoid duplication of metadata.
-                                                echo "Adding ${observations.name} metadata."
                                                 drafter.addData(
                                                         id,
-                                                        "${DATASET_DIR}/out/${baseName}.csv-metadata.trig",
+                                                        expectedTrigFilePath,
                                                         "application/trig",
                                                         "UTF-8",
                                                         metadataGraph
                                                 )
+
                                                 writeFile(file: "out/${baseName}-md-prov.ttl", text: util.jobPROV(metadataGraph))
                                                 drafter.addData(
                                                         id,

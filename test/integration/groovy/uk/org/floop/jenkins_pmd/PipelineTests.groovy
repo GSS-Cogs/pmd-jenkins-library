@@ -76,6 +76,14 @@ class PipelineTests {
             }''', "TestJob")
     }
 
+    @Test(timeout=0l) // Let jUnit know not to apply timeouts here.
+    @LocalData // Find the associated data in test/resources/uk/org/floop/jenkins_pmd/PipelineTests/FamilyPipelineFixedDatabaker
+    @WithTimeout(10000) // Override Jenkins test harness timeout. 180 seconds is not long enough.
+    void "FamilyPipelineMultiGraphNonAccretive"() {
+        assertPipelineSucceeds('familyTransformPipeline {}', "TestJob")
+    }
+
+
     private void assertPipelineSucceeds(String jenkinsFileDefinition, String jobName) {
         final CpsFlowDefinition flow = new CpsFlowDefinition(jenkinsFileDefinition)
         final WorkflowJob workflowJob = rule.createProject(WorkflowJob, 'project')

@@ -1,0 +1,42 @@
+{
+    "id": "idpd-quarters-test",
+    "title": "quarters-test",
+    "publisher": "Integrated Data Platform Dissemination",
+    "description": "A seeded, random dataset of 4 columns plus period information (4 equal quarters in 2020)",
+    "landingPage": "https://nohello.net/",
+    "dataURL": "https://nohello.net",
+    "datasetNotes": ["None"],
+    "published": "2021-05-04",
+    "families": [
+        "Test"
+    ],
+    "extract": {
+        "source": "None",
+        "stage": "Done"
+    },
+    "transform": {
+        "columns": {
+            "Period": {
+                "parent": "http://purl.org/linked-data/sdmx/2009/dimension#refPeriod",
+                "value": "http://reference.data.gov.uk/id/{period}"
+            },
+            "Dimension": {
+                "dimension": "http://gss-data.org.uk/def/test/property/dimension/",
+                "value": "http://gss-data.org.uk/def/test/property/dimension/{dimension}"
+            },
+            "Attribute": {
+                "dimension": "http://gss-data.org.uk/def/test/property/attribute/",
+                "value": "http://gss-data.org.uk/def/test/property/attribute/{attribute}"
+            },
+            "Value": {
+                "unit": "http://gss-data.org.uk/def/test/property/dimension/a",
+                "measure": "http://gss-data.org.uk/def/measure/production",
+                "datatype": "int"
+            },
+            "Measure": {
+                "attribute": "http://purl.org/linked-data/sdmx/2009/attribute#obsStatus",
+                "value": "http://gss-data.org.uk/def/concept/cogs-markers/{marker}"
+            }
+        }
+    }
+}
