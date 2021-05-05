@@ -306,14 +306,13 @@ def call(body, forceReplacementUpload = false) {
                                         }
                                     }
 
+                                    def mapDataSetUriToExpectedGraphs = [:]
                                     def outputFiles = findFiles(glob: "out/*.ttl.gz")
                                     if (outputFiles.length == 0) {
                                         error(message: "No output RDF files found")
                                     } else {
                                         for (def observations : outputFiles) {
                                             String baseName = observations.name.substring(0, observations.name.lastIndexOf('.ttl.gz'))
-                                            def isAccretiveUpload = util.isAccretiveUpload()
-
 
                                             def datasetGraphUriJson = readJSON(text: readFile(file: "out/${baseName}-dataset-graph.json"))
                                             def datasetGraph = datasetGraphUriJson.results.bindings[0].datasetGraphUri.value
@@ -363,27 +362,39 @@ def call(body, forceReplacementUpload = false) {
                                                     datasetGraph
                                             )
 
-                                            def expectedGraphs = [datasetGraph]
-                                            echo "Linking expected graphs ${expectedGraphs.join(", ")} to dataset ${datasetUri}"
-
-                                            def catalogueEntryGraphUri = util.getCatalogGraphForDataSet(id, datasetUri)
-                                            def newCatalogEntryTriples =
-                                                    util.getCatalogEntryTriplesToAdd draftId: id,
-                                                                                     dataSetUri: datasetUri,
-                                                                                     expectedGraphs: expectedGraphs
-                                            if (newCatalogEntryTriples.length() > 0) {
-                                                def catalogEntriesFile = "${DATASET_DIR}/out/${baseName}-catalog-entry-graphs.ttl"
-                                                writeFile(file: catalogEntriesFile, text: newCatalogEntryTriples)
-                                                drafter.addData(
-                                                        id,
-                                                        catalogEntriesFile.toString(),
-                                                        "text/turtle",
-                                                        "UTF-8",
-                                                        catalogueEntryGraphUri
-                                                )
+                                            if (!mapDataSetUriToExpectedGraphs.containsKey(datasetUri)) {
+                                                mapDataSetUriToExpectedGraphs[datasetUri] = []
+                                            }
+                                            List<String> expectedGraphsForDataset = mapDataSetUriToExpectedGraphs[datasetUri]
+                                            if (!expectedGraphsForDataset.contains(datasetGraph)){
+                                                expectedGraphsForDataset.add(datasetGraph)
                                             }
                                         }
                                     }
+
+                                    for (String dataSetUri : mapDataSetUriToExpectedGraphs.keySet()){
+                                        List<String> expectedGraphUris = mapDataSetUriToExpectedGraphs[dataSetUri]
+                                        echo "Linking expected graphs ${expectedGraphUris.join(", ")} to dataset ${dataSetUri}"
+
+                                        def catalogueEntryGraphUri = util.getCatalogGraphForDataSet(id, dataSetUri)
+                                        def newCatalogEntryTriples =
+                                                util.getCatalogEntryTriplesToAdd draftId: id,
+                                                        dataSetUri: dataSetUri,
+                                                        expectedGraphs: expectedGraphUris
+                                        if (newCatalogEntryTriples.length() > 0) {
+                                            def fileSafeName = dataSetUri.replaceAll("[^A-Za-z0-9]+", "-")
+                                            def catalogEntriesFile = "${DATASET_DIR}/out/${fileSafeName}-catalog-entry-graphs.ttl"
+                                            writeFile(file: catalogEntriesFile, text: newCatalogEntryTriples)
+                                            drafter.addData(
+                                                    id,
+                                                    catalogEntriesFile.toString(),
+                                                    "text/turtle",
+                                                    "UTF-8",
+                                                    catalogueEntryGraphUri
+                                            )
+                                        }
+                                    }
+
                                     for (def codelist : findFiles(glob: "out/codelists/*.ttl.gz")) {
                                         String baseName = codelist.name.substring(0, codelist.name.lastIndexOf('.ttl.gz'))
 
