@@ -39,7 +39,7 @@ def test(Map config = null) {
     String TOKEN = drafter.getToken()
     try {
         wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: [[password: TOKEN, var: 'TOKEN']]]) {
-            sh "sparql-deleteGraphsForJob-runner ${ignoreErrors ? '-i' : ''} ${testDirArgs} -s '${endpoint}?union-with-live=true${test_timeout}' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}.xml'"
+            sh "sparql-test-runner ${ignoreErrors ? '-i' : ''} ${testDirArgs} -s '${endpoint}?union-with-live=true${test_timeout}' -l 10 -k '${TOKEN}' ${fromArgs} -r 'reports/TESTS-${dspath}.xml'"
         }
     } catch (err) {
         // Ensure we still submit the draftset to editors, so it's still

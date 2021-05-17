@@ -1,6 +1,8 @@
 package uk.org.floop.jenkins_pmd
 
+import groovy.util.logging.Log
 import groovyjarjarantlr.collections.List
+import org.codehaus.groovy.tools.shell.util.Logger
 import org.jenkinsci.plugins.uniqueid.IdStore
 import org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper
 
@@ -188,7 +190,7 @@ VALUES ( ?ds ) {
     static void deleteAllGraphsCreatedByJob(Drafter drafter, String jobId) {
         def distinctGraphs = getGraphsCreatedByJob(drafter, jobId)
         if (distinctGraphs.any()) {
-            println "Found graphs ${distinctGraphs.join(", ")} for job ${jobId}"
+            println("Found graphs ${distinctGraphs.join(", ")} for job ${jobId}")
         } else {
             println "No graphs found for job ${jobId}."
         }
