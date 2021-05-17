@@ -1,8 +1,8 @@
 package uk.org.floop.jenkins_pmd.scripts
 
 import groovy.json.JsonSlurper
-import groovyjarjarantlr.collections.List
 import uk.org.floop.jenkins_pmd.Drafter
+import uk.org.floop.jenkins_pmd.Job
 import uk.org.floop.jenkins_pmd.PMD
 import uk.org.floop.jenkins_pmd.PMDConfig
 
@@ -47,6 +47,6 @@ println "Starting"
 def pmd = new PMD(getPmdConfig(pmdConfigJson), Secrets.clientId, Secrets.clientSecret)
 def drafter = new Drafter(pmd)
 
-deleteAllGraphsCreatedByJob(drafter, jobId)
+Job.deleteAllGraphsCreatedByJob(drafter, jobId)
 
 println "Finished"

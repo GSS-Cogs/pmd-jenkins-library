@@ -121,7 +121,7 @@ WHERE {
 
     static List graphs(RunWrapper build, PMD pmd, String draftId) {
         String jobId = getID(build)
-        return getDistinctGraphsOwnedByJob(pmd, draftId, jobId)
+        return getDistinctGraphsOwnedByJob(pmd.drafter, draftId, jobId)
     }
 
     private static List getDistinctGraphsOwnedByJob(Drafter drafter, String draftId, String jobId) {
