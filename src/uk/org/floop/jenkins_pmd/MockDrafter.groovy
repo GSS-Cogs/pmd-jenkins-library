@@ -35,7 +35,7 @@ class MockDrafter extends AbstractDrafter {
     @Override
     Dictionary<String, Object> addData(String draftId, String source, String mimeType, String encoding, String graph) throws DrafterException {
         // Let's ensure that the file we've been told about actually exists.
-        // This is to ensure we at least test that the path provided to the function is acceptable.
+        // This is to ensure we at least deleteGraphsForJob that the path provided to the function is acceptable.
         if (!(new File(source).exists())) {
             throw new IllegalArgumentException("File '${source}' does not exist.")
         }
