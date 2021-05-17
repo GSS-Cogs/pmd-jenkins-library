@@ -70,7 +70,7 @@ class Drafter extends AbstractDrafter implements Serializable {
         return exec
     }
 
-    Collection<Dictionary<String, Object>> listDraftsets(Include include) {
+    Collection<LinkedHashMap<String, Object>> listDraftsets(Include include) {
         def js = new JsonSlurper()
         String path = (include == Include.ALL) ? "/v1/draftsets" : "/v1/draftsets?include=" + include.value
         def response = js.parse(
@@ -89,7 +89,8 @@ class Drafter extends AbstractDrafter implements Serializable {
         "${response.getStatusLine()} : ${EntityUtils.toString(response.getEntity())}"
     }
 
-    Dictionary<String, Object> createDraftset(String label) {
+    LinkedHashMap<String, Object> createDraftset(String label) {
+        def thing = [:]
         String displayName = URLEncoder.encode(label, "UTF-8")
         String path = "/v1/draftsets?display-name=${displayName}"
         int retries = 5
@@ -134,7 +135,7 @@ class Drafter extends AbstractDrafter implements Serializable {
         }
     }
 
-    Dictionary<String, Object> deleteGraph(String draftsetId, String graph) {
+    LinkedHashMap<String, Object> deleteGraph(String draftsetId, String graph) {
         String encGraph = URLEncoder.encode(graph, "UTF-8")
         String path = "/v1/draftset/${draftsetId}/graph?graph=${encGraph}&silent=true"
         int retries = 5
@@ -157,7 +158,7 @@ class Drafter extends AbstractDrafter implements Serializable {
         throw new DrafterException("Problem deleting graph, maximum retries reached while waiting for lock.")
     }
 
-    Dictionary<String, Object> deleteDraftset(String draftsetId) {
+    LinkedHashMap<String, Object> deleteDraftset(String draftsetId) {
         String path = "/v1/draftset/${draftsetId}"
         int retries = 5
         while (retries > 0) {
@@ -219,7 +220,7 @@ class Drafter extends AbstractDrafter implements Serializable {
         }
     }
 
-    Dictionary<String, Object> addData(String draftId, String source, String mimeType, String encoding, String graph) {
+    LinkedHashMap<String, Object> addData(String draftId, String source, String mimeType, String encoding, String graph) {
         String path = "/v1/draftset/${draftId}/data"
         if (graph) {
             String encGraph = URLEncoder.encode(graph, "UTF-8")
@@ -260,7 +261,7 @@ class Drafter extends AbstractDrafter implements Serializable {
         throw new DrafterException("Problem adding data, maximum retries reached while waiting for lock.")
     }
 
-    Dictionary<String, Object> findDraftset(String displayName, Include include) {
+    LinkedHashMap<String, Object> findDraftset(String displayName, Include include) {
         def drafts = listDraftsets(include)
         def draftset = drafts.find { it['display-name'] == displayName }
         if (draftset) {
@@ -271,7 +272,7 @@ class Drafter extends AbstractDrafter implements Serializable {
 
     }
 
-    Dictionary<String, Object> submitDraftsetTo(String id, Role role, String user) {
+    LinkedHashMap<String, Object> submitDraftsetTo(String id, Role role, String user) {
         String path = "/v1/draftset/${id}/submit-to"
         Executor exec = getExec()
         URIBuilder uriBuilder = new URIBuilder(apiBase.resolve(path))
@@ -303,7 +304,7 @@ class Drafter extends AbstractDrafter implements Serializable {
         throw new DrafterException("Problem submitting draftset, maximum retries reached while waiting for lock.")
     }
 
-    Dictionary<String, Object> claimDraftset(String id) {
+    LinkedHashMap<String, Object> claimDraftset(String id) {
         String path = "/v1/draftset/${id}/claim"
         Executor exec = getExec()
         HttpResponse response = exec.execute(
@@ -318,7 +319,7 @@ class Drafter extends AbstractDrafter implements Serializable {
         return new JsonSlurper().parse(EntityUtils.toByteArray(response.getEntity()))
     }
 
-    Dictionary<String, Object> publishDraftset(String id) {
+    LinkedHashMap<String, Object> publishDraftset(String id) {
         String path = "/v1/draftset/${id}/publish"
         Executor exec = getExec()
         int retries = 5

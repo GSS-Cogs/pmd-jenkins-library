@@ -1,6 +1,7 @@
 package uk.org.floop.jenkins_pmd.scripts
 
 import groovy.json.JsonSlurper
+import org.codehaus.groovy.tools.shell.util.Logger
 import uk.org.floop.jenkins_pmd.Drafter
 import uk.org.floop.jenkins_pmd.Job
 import uk.org.floop.jenkins_pmd.PMD
@@ -24,7 +25,7 @@ private PMDConfig getPmdConfig(String json){
 /**
  * Begin Configuration Section.
  */
-def jobId = ""
+def jobId = "HMRC-regional-trade-statistics"
 
 def pmdConfigJson = """{
   "pmd_api": "https://cogs-staging-drafter.publishmydata.com/",
@@ -42,11 +43,12 @@ def pmdConfigJson = """{
  */
 
 
-println "Starting"
+def l = Logger.create deleteGraphsForJob.class
+l.warn("Starting")
 
 def pmd = new PMD(getPmdConfig(pmdConfigJson), Secrets.clientId, Secrets.clientSecret)
 def drafter = new Drafter(pmd)
 
 Job.deleteAllGraphsCreatedByJob(drafter, jobId)
 
-println "Finished"
+l.warn("Finished")

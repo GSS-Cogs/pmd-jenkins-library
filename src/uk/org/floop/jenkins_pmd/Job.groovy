@@ -1,7 +1,5 @@
 package uk.org.floop.jenkins_pmd
 
-import groovy.util.logging.Log
-import groovyjarjarantlr.collections.List
 import org.codehaus.groovy.tools.shell.util.Logger
 import org.jenkinsci.plugins.uniqueid.IdStore
 import org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper
@@ -9,6 +7,7 @@ import org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper
 import java.time.Instant
 
 class Job {
+    static Logger logger = Logger.create(Job.class)
     static String getID(RunWrapper build) {
         def job = build.rawBuild.parent
         String id = IdStore.getId(job)
@@ -121,12 +120,12 @@ WHERE {
         return newTriplesToInsert
     }
 
-    static List graphs(RunWrapper build, PMD pmd, String draftId) {
+    static ArrayList graphs(RunWrapper build, PMD pmd, String draftId) {
         String jobId = getID(build)
         return getDistinctGraphsOwnedByJob(pmd.drafter, draftId, jobId)
     }
 
-    private static List getDistinctGraphsOwnedByJob(Drafter drafter, String draftId, String jobId) {
+    private static ArrayList getDistinctGraphsOwnedByJob(Drafter drafter, String draftId, String jobId) {
         def results = drafter.query(draftId, """
             PREFIX prov: <http://www.w3.org/ns/prov#>
             PREFIX gdp: <http://gss-data.org.uk/def/gdp#>
@@ -140,7 +139,7 @@ WHERE {
         }
     }
 
-    static List referencedGraphs(PMD pmd, String draftId, boolean isAccretiveUpload) {
+    static ArrayList referencedGraphs(PMD pmd, String draftId, boolean isAccretiveUpload) {
         def datasets = pmd.drafter.query(draftId, """
         PREFIX qb: <http://purl.org/linked-data/cube#>
         SELECT DISTINCT ?ds WHERE {
@@ -178,7 +177,7 @@ VALUES ( ?ds ) {
      * @param jobId
      * @return
      */
-    private static List getGraphsCreatedByJob(Drafter drafter, String jobId) {
+    private static ArrayList getGraphsCreatedByJob(Drafter drafter, String jobId) {
         String draftsetId = drafter.createDraftset("Remove large dataset graph-by-graph.").id
         def distinctGraphs = getDistinctGraphsOwnedByJob(drafter, draftsetId, jobId)
         drafter.deleteDraftset(draftsetId)
@@ -190,24 +189,24 @@ VALUES ( ?ds ) {
     static void deleteAllGraphsCreatedByJob(Drafter drafter, String jobId) {
         def distinctGraphs = getGraphsCreatedByJob(drafter, jobId)
         if (distinctGraphs.any()) {
-            println("Found graphs ${distinctGraphs.join(", ")} for job ${jobId}")
+            logger.debug("Found graphs ${distinctGraphs.join(", ")} for job ${jobId}")
         } else {
-            println "No graphs found for job ${jobId}."
+            logger.warn("No graphs found for job ${jobId}.")
         }
 
         for (def graph : distinctGraphs) {
             String draftsetId = drafter.createDraftset("Remove large dataset graph-by-graph.").id
-            println "Deleting graph ${graph} in draftset ${draftsetId}"
+            logger.warn("Deleting graph ${graph} in draftset ${draftsetId}")
             drafter.deleteGraph(draftsetId, graph)
             drafter.publishDraftset(draftsetId)
-            println "Draftset ${draftsetId} published"
+            logger.debug("Draftset ${draftsetId} published")
         }
 
         def remainingGraphs = getGraphsCreatedByJob(drafter, jobId)
         if (remainingGraphs.any()) {
             throw new Exception("Job ${jobId} has remaining graphs ${remainingGraphs.join(", ")}")
         } else {
-            println "No remaining graphs found for job ${jobId}"
+            logger.debug("No remaining graphs found for job ${jobId}")
         }
     }
 
