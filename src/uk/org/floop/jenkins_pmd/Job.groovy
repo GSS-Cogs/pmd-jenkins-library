@@ -1,8 +1,8 @@
 package uk.org.floop.jenkins_pmd
 
+import groovyjarjarantlr.collections.List
 import org.jenkinsci.plugins.uniqueid.IdStore
 import org.jenkinsci.plugins.workflow.support.steps.build.RunWrapper
-import org.parboiled.common.Tuple2
 
 import java.time.Instant
 
@@ -119,22 +119,26 @@ WHERE {
         return newTriplesToInsert
     }
 
-    static List<String> graphs(RunWrapper build, PMD pmd, String draftId) {
+    static List graphs(RunWrapper build, PMD pmd, String draftId) {
         String jobId = getID(build)
-        def results = pmd.drafter.query(draftId, """
-PREFIX prov: <http://www.w3.org/ns/prov#>
-PREFIX gdp: <http://gss-data.org.uk/def/gdp#>
+        return getDistinctGraphsOwnedByJob(pmd, draftId, jobId)
+    }
 
-SELECT DISTINCT ?graph WHERE {
-  ?graph prov:wasGeneratedBy [ prov:wasAssociatedWith [ gdp:uniqueID "${jobId}" ] ] .
-}
-""", true)
+    private static List getDistinctGraphsOwnedByJob(Drafter drafter, String draftId, String jobId) {
+        def results = drafter.query(draftId, """
+            PREFIX prov: <http://www.w3.org/ns/prov#>
+            PREFIX gdp: <http://gss-data.org.uk/def/gdp#>
+            
+            SELECT DISTINCT ?graph WHERE {
+              ?graph prov:wasGeneratedBy [ prov:wasAssociatedWith [ gdp:uniqueID "${jobId}" ] ] .
+            }
+        """, true)
         return results.results.bindings.collect {
-                it.graph.value
+            it.graph.value
         }
     }
 
-    static List<String> referencedGraphs(PMD pmd, String draftId, boolean isAccretiveUpload) {
+    static List referencedGraphs(PMD pmd, String draftId, boolean isAccretiveUpload) {
         def datasets = pmd.drafter.query(draftId, """
         PREFIX qb: <http://purl.org/linked-data/cube#>
         SELECT DISTINCT ?ds WHERE {
@@ -165,4 +169,45 @@ VALUES ( ?ds ) {
   ${dsValues}
 }""", true).results.bindings.collect { it.graph.value }
     }
+
+    /**
+     * Creates (and deletes) its own draftset to run the query.
+     * @param drafter
+     * @param jobId
+     * @return
+     */
+    private static List getGraphsCreatedByJob(Drafter drafter, String jobId) {
+        String draftsetId = drafter.createDraftset("Remove large dataset graph-by-graph.").id
+        def distinctGraphs = getDistinctGraphsOwnedByJob(drafter, draftsetId, jobId)
+        drafter.deleteDraftset(draftsetId)
+
+        return distinctGraphs
+    }
+
+
+    static void deleteAllGraphsCreatedByJob(Drafter drafter, String jobId) {
+        def distinctGraphs = getGraphsCreatedByJob(drafter, jobId)
+        if (distinctGraphs.any()) {
+            println "Found graphs ${distinctGraphs.join(", ")} for job ${jobId}"
+        } else {
+            println "No graphs found for job ${jobId}."
+        }
+
+        for (def graph : distinctGraphs) {
+            String draftsetId = drafter.createDraftset("Remove large dataset graph-by-graph.").id
+            println "Deleting graph ${graph} in draftset ${draftsetId}"
+            drafter.deleteGraph(draftsetId, graph)
+            drafter.publishDraftset(draftsetId)
+            println "Draftset ${draftsetId} published"
+        }
+
+        def remainingGraphs = getGraphsCreatedByJob(drafter, jobId)
+        if (remainingGraphs.any()) {
+            throw new Exception("Job ${jobId} has remaining graphs ${remainingGraphs.join(", ")}")
+        } else {
+            println "No remaining graphs found for job ${jobId}"
+        }
+    }
+
+
 }

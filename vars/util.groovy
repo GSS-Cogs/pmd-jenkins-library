@@ -91,3 +91,10 @@ String getCatalogEntryTriplesToAdd(Map config) {
   String[] dataSetGraphUris = config.get("expectedGraphs")
   Job.getCatalogEntryTriplesToAdd(pmdConfig("pmd"), draftId, dataSetUri, dataSetGraphUris)
 }
+
+void incrementallyDeleteAndPublishAllGraphsForJob() {
+  def pmd = pmdConfig("pmd")
+  def drafter = pmd.drafter
+
+  Job.deleteAllGraphsCreatedByJob(drafter, getJobID())
+}

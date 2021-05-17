@@ -6,7 +6,7 @@ import uk.org.floop.jenkins_pmd.Drafter
 import uk.org.floop.jenkins_pmd.PMD
 import uk.org.floop.jenkins_pmd.PMDConfig
 
-PMDConfig getPmdConfig(String json){
+private PMDConfig getPmdConfig(String json){
     def jsonSlurper = new JsonSlurper()
     def pmdConfigDict = jsonSlurper.parseText(json)
     def pmdConfig = new PMDConfig()
@@ -19,51 +19,6 @@ PMDConfig getPmdConfig(String json){
     pmdConfig.test_timeout = pmdConfigDict["test_timeout"]
     pmdConfig.pmd_public_sparql_endpoint = pmdConfigDict["pmd_public_sparql_endpoint"]
     return pmdConfig
-}
-
-private List getDistinctGraphsForJenkinsJobId(Drafter drafter, String jobId) {
-    String draftsetId = drafter.createDraftset("Remove large dataset graph-by-graph.").id
-
-    def graphResults = drafter.query(draftsetId, """
-PREFIX prov: <http://www.w3.org/ns/prov#>
-PREFIX gdp: <http://gss-data.org.uk/def/gdp#>
-
-SELECT DISTINCT ?graph WHERE {
-  ?graph prov:wasGeneratedBy [ prov:wasAssociatedWith [ gdp:uniqueID "${jobId}" ] ] .
-}
-""", true)
-
-    List distinctGraphs = graphResults.results.bindings.collect {
-        it.graph.value
-    }
-
-    drafter.deleteDraftset(draftsetId)
-    distinctGraphs
-}
-
-private void deleteAllGraphsCreatedByJob(Drafter drafter, String jobId) {
-    List distinctGraphs = getDistinctGraphsForJenkinsJobId(drafter, jobId)
-
-    if (distinctGraphs.any()) {
-        println "Found graphs ${distinctGraphs.join(", ")} for job ${jobId}"
-    } else {
-        println "No graphs found for job ${jobId}."
-    }
-
-    for (def graph : distinctGraphs) {
-        String draftsetId = drafter.createDraftset("Remove large dataset graph-by-graph.").id
-        println "Deleting graph ${graph} in draftset ${draftsetId}"
-        drafter.deleteGraph(draftsetId, graph)
-        drafter.publishDraftset(draftsetId)
-        println "Draftset ${} published"
-    }
-
-    List remainingGraphs = getDistinctGraphsForJenkinsJobId(drafter, jobId)
-    if (remainingGraphs.any()) {
-        throw new Exception("Job ${jobId} has remaining graphs ${remainingGraphs.join(", ")}")
-    } else {
-        println "No remaining graphs found for job ${jobId}"
-    }
 }
 
 /**
