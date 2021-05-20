@@ -8,6 +8,7 @@ import uk.org.floop.jenkins_pmd.SparqlQuery
 import uk.org.floop.jenkins_pmd.models.CatalogMetadata
 import org.apache.http.client.fluent.Request
 
+
 String slugise(String string) {
   string.toLowerCase()
         .replaceAll('[^\\w/]', '-')
@@ -76,6 +77,15 @@ boolean isAccretiveUpload() {
   def info = readJSON(text: readFile(file: infoJsonPath))
   if (info.containsKey('load') && info['load'].containsKey('accretiveUpload')) {
     return info['load']['accretiveUpload']
+  }
+
+  return false
+}
+
+boolean hasCmdOutputs() {
+  def cmdOutputPath = "cmd-out"
+  if cmdOutputPath.exists() {
+    return true
   }
 
   return false

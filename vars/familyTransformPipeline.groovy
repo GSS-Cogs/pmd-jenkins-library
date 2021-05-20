@@ -31,26 +31,14 @@ def call(body, forceReplacementUpload = false) {
                     script {
                          FAILED_STAGE = env.STAGE_NAME
                         sh "rm -rf ${DATASET_DIR}/out"
+                        sh "rm -rf ${DATASET_DIR}/cmd-out"
                         sh "rm -rf reports"
-
-                        def infoJsonPath = "${DATASET_DIR}/info.json"
-                        def accretiveUpload = false
-                        def info = readJSON(text: readFile(file: infoJsonPath))
-                        if (info.containsKey('load') && info['load'].containsKey('accretiveUpload')) {
-                            accretiveUpload = info['load']['accretiveUpload']
-                        }
-
-                        if (forceReplacementUpload && accretiveUpload) {
-                            info['load']['accretiveUpload'] = false
-                            echo "Forcing replacement upload instead of accretive upload."
-                            writeJSON(file: infoJsonPath, json: info, pretty: 4)
-                        }
                     }
                 }
             }
             stage('Transform') {
                 stages {
-                    stage('Tidy CSV') {
+                    stage('Transform Data') {
                         agent {
                             docker {
                                 image DATABAKER
@@ -67,7 +55,6 @@ def call(body, forceReplacementUpload = false) {
                                             sh "jupytext --to notebook '*.py'"
                                         }
 
-                                        echo "Sparql endpoint: ${env.SPARQL_URL}"
                                         def nbConvertCommand = "jupyter-nbconvert --to html --output-dir='out' --ExecutePreprocessor.timeout=None --execute 'main.ipynb'"
                                         if (DEBUG_PYTHON) {
                                             nbConvertCommand += " --debug"
@@ -78,7 +65,7 @@ def call(body, forceReplacementUpload = false) {
                             }
                         }
                     }
-                    stage('Validate CSV') {
+                    stage('CSVlint PMD4 Targetted CSVs') {
                         agent {
                             docker {
                                 image CSVLINT
@@ -115,7 +102,7 @@ def call(body, forceReplacementUpload = false) {
                             }
                         }
                     }
-                    stage('Data Cube') {
+                    stage('Create PMD4 Data Cube RDF') {
                         agent {
                             docker {
                                 image GSS_JVM_BUILD_TOOLS
@@ -220,7 +207,7 @@ def call(body, forceReplacementUpload = false) {
                             }
                         }
                     }
-                    stage('Local Codelists') {
+                    stage('Create PMD4 Local Codelist RDF') {
                         agent {
                             docker {
                                 image CSV2RDF
@@ -259,10 +246,29 @@ def call(body, forceReplacementUpload = false) {
                                 }
                             }
                         }
-                    }
+                    }           
                 }
             }
-            stage('Load') {
+            stage('Load V4 to CMD') {
+                stages {
+                    stage('Upload V4') {
+                        agent {
+                            docker {
+                                image DATABAKER
+                                reuseNode true
+                                alwaysPull true
+                            }
+                        }
+                        script {
+                            FAILED_STAGE = env.STAGE_NAME
+                            if util.hasCmdOutputs {
+                                sh "echo CMD upload goes here"
+                            }
+                        }
+                    }    
+                }
+            }
+            stage('Load RDF to PMD4') {
                 when {
                     expression {
                         def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
@@ -274,7 +280,7 @@ def call(body, forceReplacementUpload = false) {
                     }
                 }
                 stages {
-                    stage('Upload Cube') {
+                    stage('Upload RDF Data Cube') {
                         steps {
                             script {
                                 FAILED_STAGE = env.STAGE_NAME
@@ -429,7 +435,7 @@ def call(body, forceReplacementUpload = false) {
             }
             stage('Draft') {
                 stages {
-                    stage("Run SPARQL Tests on Draftset") {
+                    stage("Run SPARQL Tests on PMD4 Draftset") {
                         agent {
                             docker {
                                 image SPARQL_TESTS
@@ -446,7 +452,7 @@ def call(body, forceReplacementUpload = false) {
                     }
                     stage('Draftset') {
                         parallel {
-                            stage('Submit for review') {
+                            stage('Submit PMD4 draft for review') {
                                 when {
                                     expression {
                                         def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
@@ -467,7 +473,7 @@ def call(body, forceReplacementUpload = false) {
                                     }
                                 }
                             }
-                            stage('Publish') {
+                            stage('Publish PMD4 data') {
                                 when {
                                     expression {
                                         def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
