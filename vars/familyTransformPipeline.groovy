@@ -68,6 +68,7 @@ def call(body, forceReplacementUpload = false) {
                                             sh "jupytext --to notebook '*.py'"
                                         }
 
+                                        echo "Sparql endpoint: ${env.SPARQL_URL}"
                                         def nbConvertCommand = "jupyter-nbconvert --to html --output-dir='out' --ExecutePreprocessor.timeout=None --execute 'main.ipynb'"
                                         if (DEBUG_PYTHON) {
                                             nbConvertCommand += " --debug"
