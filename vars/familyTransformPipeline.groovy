@@ -25,6 +25,13 @@ def call(body, forceReplacementUpload = false) {
             JOB_ID = util.getJobID()
             SPARQL_URL = "${pmdConfig("pmd").pmdPublicSparqlEndPoint}"
         }
+        parameters{
+            string (
+                defaultValue: "-not-specified-",
+                description: 'The source url as passed to the Jenkins job',
+                name: 'source'
+                )
+        }
         stages {
             stage('Clean') {
                 steps {
@@ -36,6 +43,7 @@ def call(body, forceReplacementUpload = false) {
 
                         def infoJsonPath = "${DATASET_DIR}/info.json"
                         def accretiveUpload = false
+
                         def info = readJSON(text: readFile(file: infoJsonPath))
                         if (info.containsKey('load') && info['load'].containsKey('accretiveUpload')) {
                             accretiveUpload = info['load']['accretiveUpload']
@@ -45,6 +53,34 @@ def call(body, forceReplacementUpload = false) {
                             info['load']['accretiveUpload'] = false
                             echo "Forcing replacement upload instead of accretive upload."
                             writeJSON(file: infoJsonPath, json: info, pretty: 4)
+                        }
+                    }
+                }
+            }
+            stage('Use provided source zip param') {
+                stages {
+                    stage('echo received source url') { 
+                        agent {docker { image 'gsscogs/databaker:latest' } }
+                        when { "${params.source}" != "-not-specified-"}
+                        steps {
+                        sh "echo recieved source url: ${params.source}"
+                        }
+                    }
+
+                    stage('unzip all the things') { 
+                        agent {docker { image 'gsscogs/databaker:latest' } }
+                        when { "${params.source}" != "-not-specified-"}
+                        steps {
+                            withCredentials([[$class: 'FileBinding', credentialsId:"ons_source_bucket_credentials", variable: 'GOOGLE_APPLICATION_CREDENTIALS']]) {
+                                sh "python3 getunzipsource.py ${params.source}"
+                            }
+                        }
+                    }
+                    stage('echo received files') { 
+                        agent {docker { image 'gsscogs/databaker:latest' } }
+                        when { "${params.source}" != "-not-specified-"}
+                        steps {
+                        sh "ls -l ./source"
                         }
                     }
                 }
@@ -88,7 +124,7 @@ def call(body, forceReplacementUpload = false) {
 
                             }
                         }
-                        when {
+                        when { 
                             expression {
                                 def info = readJSON(text: readFile(file: "${DATASET_DIR}/info.json"))
                                 if (info.containsKey('transform') && info['transform'].containsKey('validate')) {
