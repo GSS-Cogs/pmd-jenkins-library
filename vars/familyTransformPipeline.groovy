@@ -33,6 +33,19 @@ def call(body, forceReplacementUpload = false) {
                         sh "rm -rf ${DATASET_DIR}/out"
                         sh "rm -rf ${DATASET_DIR}/cmd-out"
                         sh "rm -rf reports"
+
+                        def infoJsonPath = "${DATASET_DIR}/info.json"
+                        def accretiveUpload = false
+                        def info = readJSON(text: readFile(file: infoJsonPath))
+                        if (info.containsKey('load') && info['load'].containsKey('accretiveUpload')) {
+                            accretiveUpload = info['load']['accretiveUpload']
+                        }
+
+                        if (forceReplacementUpload && accretiveUpload) {
+                            info['load']['accretiveUpload'] = false
+                            echo "Forcing replacement upload instead of accretive upload."
+                            writeJSON(file: infoJsonPath, json: info, pretty: 4)
+                        }
                     }
                 }
             }
