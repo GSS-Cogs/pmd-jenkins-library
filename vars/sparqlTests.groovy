@@ -31,7 +31,7 @@ def test(Map config = null) {
     if (includeGraphsReferencedByDataset) {
         fromGraphs += util.referencedGraphs(pmd, draftId)
     }
-    String fromArgs = fromGraphs.unique().collect { '-f ' + it }.join(' ')
+    String fromArgs = fromGraphs.unique().collect { "-f '${it}'" }.join(' ')
     String testDirArgs = testGroups.collect {
         '-t /usr/local/tests/' + SparqlTestGroup.toDirectoryName(it)
     }.join(' ')
