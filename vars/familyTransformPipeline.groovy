@@ -519,7 +519,7 @@ Blocks #${main_issue}
                     }
                     step([$class     : 'GitHubIssueNotifier',
                           issueAppend: true,
-                          issueLabel : 'Pipeline failure',
+                          issueLabel : 'Pipeline',
                           issueTitle : '$JOB_BASE_NAME failed',
                           issueBody  : issueBody])
                 }
