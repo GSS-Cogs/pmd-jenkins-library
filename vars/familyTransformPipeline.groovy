@@ -499,6 +499,7 @@ def call(body, forceReplacementUpload = false) {
                     publishHTML([
                             allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true,
                             reportDir   : "${relativeDatasetDir}/out", reportFiles: 'main.html',
+                            includes : 'main.html',
                             reportName  : 'Transform'])
                 }
             }
