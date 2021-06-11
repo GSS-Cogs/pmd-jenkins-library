@@ -501,6 +501,27 @@ def call(body, forceReplacementUpload = false) {
                             reportDir   : "${relativeDatasetDir}/out", reportFiles: 'main.html',
                             includes : 'main.html',
                             reportName  : 'Transform'])
+                    String main_issue
+                    if (fileExists("${relativeDatasetDir}/info.json")) {
+                        def info = readJSON(text: readFile(file: "${relativeDatasetDir}/info.json"))
+                        if (info.containsKey('transform') && info['transform'].containsKey('main_issue')) {
+                            main_issue = info['transform']['main_issue']
+                        }
+                    }
+                    String issueBody = """Jenkins job result: ${currentBuild.result}
+Stage: ${FAILED_STAGE}
+[View full output]($BUILD_URL)
+"""
+                    if (main_issue) {
+                        issueBody = issueBody + """
+Blocks #${main_issue}
+"""
+                    }
+                    step([$class     : 'GitHubIssueNotifier',
+                          issueAppend: true,
+                          issueLabel : 'Pipeline failure',
+                          issueTitle : '$JOB_BASE_NAME failed',
+                          issueBody  : issueBody])
                 }
             }
         }
