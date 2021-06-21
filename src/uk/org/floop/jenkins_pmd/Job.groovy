@@ -160,10 +160,6 @@ SELECT DISTINCT ?graph WHERE {
   } UNION {
     ?ds qb:structure/qb:component/qb:componentProperty/qb:codeList ?cs .
     GRAPH ?graph { ?cs a skos:ConceptScheme }
-  } UNION {
-    ?ds qb:structure/qb:component/qb:componentProperty/qb:codeList ?cs.
-    ?concept skos:inScheme ?cs.
-    GRAPH ?graph { ?concept rdfs:label ?conceptLabel. }
   }
 }
 VALUES ( ?ds ) {
