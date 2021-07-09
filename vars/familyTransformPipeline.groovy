@@ -290,7 +290,11 @@ def call(body, forceReplacementUpload = false) {
                                     drafter.listDraftsets(Drafter.Include.OWNED)
                                             .findAll { it['display-name'] == env.JOB_NAME }
                                             .each {
-                                                drafter.deleteDraftset(it.id)
+                                                try {
+                                                    drafter.deleteDraftset(it.id)
+                                                } catch (Exception e) {
+                                                    unstable("Unable to delete old draftset {it.id}\n{e.toString()}")
+                                                }
                                             }
                                     String id = drafter.createDraftset(env.JOB_NAME).id
                                     echo "New draftset created at ${env.PMD_DRAFTSET_URI_BASE + id}"
